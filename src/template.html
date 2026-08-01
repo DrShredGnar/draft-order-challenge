@@ -1201,7 +1201,7 @@ class Component extends DCLogic {
     phase: "lobby", qIndex: 0, questions: [], players: [], answers: {},
     secondsLeft: QUESTION_SECONDS, revealCount: 0, copied: false, qrFail: false,
     commishId: "", scanned: false,
-    muted: (function () { try { return localStorage.getItem("loog.muted") === "1"; } catch (e) { return false; } })(),
+    muted: (function () { try { return localStorage.getItem("loog.muted") !== "0"; } catch (e) { return true; } })(),
     snap: null
   };
 
@@ -1360,8 +1360,14 @@ class Component extends DCLogic {
       if (ctx.state === "suspended" && ctx.resume) ctx.resume();
       const t0 = ctx.currentTime + 0.05;
       const master = ctx.createGain();
-      master.gain.value = 0.85;
-      master.connect(ctx.destination);
+      master.gain.value = 0.5;
+      const limiter = ctx.createDynamicsCompressor();
+      limiter.threshold.value = -6;
+      limiter.knee.value = 0;
+      limiter.ratio.value = 20;
+      limiter.attack.value = 0.002;
+      limiter.release.value = 0.15;
+      master.connect(limiter); limiter.connect(ctx.destination);
 
       const noise = (secs) => {
         const b = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * secs), ctx.sampleRate);
@@ -1386,17 +1392,17 @@ class Component extends DCLogic {
       bp.frequency.exponentialRampToValueAtTime(6200, t0 + 3.9);
       const rg = ctx.createGain();
       rg.gain.setValueAtTime(0.0001, t0 + 1.2);
-      rg.gain.exponentialRampToValueAtTime(0.30, t0 + 3.85);
+      rg.gain.exponentialRampToValueAtTime(0.16, t0 + 3.85);
       rg.gain.exponentialRampToValueAtTime(0.0001, t0 + 4.15);
       rs.connect(bp); bp.connect(rg); rg.connect(master);
       rs.start(t0 + 1.2); rs.stop(t0 + 4.3);
 
       // Impact on the title slam: sub drop plus a short filtered crack.
-      sub(t0 + 4.0, 110, 34, 0.95, 0.9);
+      sub(t0 + 4.0, 110, 34, 0.55, 0.9);
       const cr = ctx.createBufferSource(); cr.buffer = noise(0.5);
       const cf = ctx.createBiquadFilter(); cf.type = "lowpass"; cf.frequency.value = 2600;
       const cg = ctx.createGain();
-      cg.gain.setValueAtTime(0.5, t0 + 4.0);
+      cg.gain.setValueAtTime(0.22, t0 + 4.0);
       cg.gain.exponentialRampToValueAtTime(0.0001, t0 + 4.35);
       cr.connect(cf); cf.connect(cg); cg.connect(master);
       cr.start(t0 + 4.0); cr.stop(t0 + 4.5);
@@ -1410,14 +1416,14 @@ class Component extends DCLogic {
         f.frequency.exponentialRampToValueAtTime(320, t0 + 8.0);
         const g = ctx.createGain();
         g.gain.setValueAtTime(0.0001, t0 + 7.0);
-        g.gain.exponentialRampToValueAtTime(0.16, t0 + 7.08);
+        g.gain.exponentialRampToValueAtTime(0.07, t0 + 7.08);
         g.gain.exponentialRampToValueAtTime(0.0001, t0 + 8.1);
         o.connect(f); f.connect(g); g.connect(master);
         o.start(t0 + 7.0); o.stop(t0 + 8.2);
       });
 
       // Final sub under the wipe.
-      sub(t0 + 8.05, 90, 30, 0.8, 0.8);
+      sub(t0 + 8.05, 90, 30, 0.45, 0.8);
     } catch (e) { /* audio is decoration; never let it break kickoff */ }
   }
   stopIntro() {
