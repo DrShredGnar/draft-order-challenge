@@ -1,0 +1,74 @@
+[
+  {
+    "uuid": "d2d97104-fefd-4fe3-b506-701516a3327e",
+    "file": "supabase.umd.js",
+    "mime": "application/javascript",
+    "compressed": true
+  },
+  {
+    "uuid": "8dd7a116-12ca-4e2c-a1ad-4555d932be01",
+    "file": "nocturne-shim.js",
+    "mime": "application/javascript",
+    "compressed": true
+  },
+  {
+    "uuid": "df85a145-0bd5-4e8c-980e-7d50b3ae3e53",
+    "file": "qr.js",
+    "mime": "application/javascript",
+    "compressed": true
+  },
+  {
+    "uuid": "4882ea57-300d-4157-9920-b486a1b0d129",
+    "file": "dc-runtime.js",
+    "mime": "text/javascript",
+    "compressed": true
+  },
+  {
+    "uuid": "19f6b3ef-a1da-4e09-8a47-2ff094b851a9",
+    "file": "react.production.min.js",
+    "mime": "text/javascript",
+    "compressed": true
+  },
+  {
+    "uuid": "24cc9766-be6d-4c2c-a08b-699976467d55",
+    "file": "react-dom.production.min.js",
+    "mime": "text/javascript",
+    "compressed": true
+  },
+  {
+    "uuid": "a1000000-0000-4000-8000-000000000001",
+    "file": "barlow-condensed-600.woff2",
+    "mime": "font/woff2",
+    "compressed": true
+  },
+  {
+    "uuid": "a1000000-0000-4000-8000-000000000002",
+    "file": "barlow-condensed-700.woff2",
+    "mime": "font/woff2",
+    "compressed": true
+  },
+  {
+    "uuid": "a1000000-0000-4000-8000-000000000003",
+    "file": "barlow-condensed-800.woff2",
+    "mime": "font/woff2",
+    "compressed": true
+  },
+  {
+    "uuid": "a1000000-0000-4000-8000-000000000004",
+    "file": "barlow-condensed-600-italic.woff2",
+    "mime": "font/woff2",
+    "compressed": true
+  },
+  {
+    "uuid": "a1000000-0000-4000-8000-000000000005",
+    "file": "barlow-condensed-700-italic.woff2",
+    "mime": "font/woff2",
+    "compressed": true
+  },
+  {
+    "uuid": "a1000000-0000-4000-8000-000000000006",
+    "file": "jetbrains-mono-var.woff2",
+    "mime": "font/woff2",
+    "compressed": true
+  }
+]
