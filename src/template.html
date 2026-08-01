@@ -718,7 +718,15 @@ p{letter-spacing:.005em}
         </div>
         <div style="font-size:clamp(14px,1.2vw,19px);color:color-mix(in srgb,var(--color-text) 55%,transparent);max-width:34ch;text-wrap:pretty">Twelve drives · play sheet drawn at random at kickoff. Nothing you tap on your phone shows up here.</div>
         <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <sc-if value="{{ tvStartLocked }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <span style="min-height:62px;padding:0 34px;display:inline-flex;align-items:center;border-radius:var(--radius-md);border:1px dashed #2b3d59;background:transparent;color:color-mix(in srgb,var(--color-text) 30%,transparent);font-family:var(--font-heading);font-size:clamp(24px,1.9vw,36px);font-weight:800;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;cursor:not-allowed">Kick off</span>
+            <span style="font-size:clamp(12px,1vw,15px);color:var(--color-accent-300);max-width:22ch;text-wrap:pretty">{{ tvStartNote }}</span>
+          </div>
+          </sc-if>
+          <sc-if value="{{ tvStartOwned }}" hint-placeholder-val="{{ true }}">
           <button sc-camel-on-click="{{ startGame }}" style="cursor:pointer;min-height:62px;padding:0 34px;border-radius:var(--radius-md);border:1px solid var(--color-onair);background:var(--color-onair);color:#fff;font-family:var(--font-heading);font-size:clamp(24px,1.9vw,36px);font-weight:800;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;box-shadow:0 0 22px rgba(212,24,24,.4)" style-hover="background:#ee2020;border-color:#ee2020">Kick off</button>
+          </sc-if>
           <button sc-camel-on-click="{{ addDemo }}" style="cursor:pointer;min-height:58px;padding:0 22px;border-radius:var(--radius-md);border:1px solid #2b3d59;background:transparent;color:color-mix(in srgb,var(--color-text) 70%,transparent);font-size:clamp(14px,1.2vw,17px);white-space:nowrap" style-hover="border-color:var(--color-accent-600);color:var(--color-text)">Fill the roster (demo)</button>
         </div>
       </div>
@@ -1043,6 +1051,32 @@ const POOL = {
 };
 const DEMO_NAMES = ["Marcus", "Dave", "Sully", "Big Rich", "Theo", "Nate", "Cam", "Petey", "Wes", "Hollis", "Gunner"];
 
+// A player's id used to be "p_" + their typed name, which meant the id was
+// public knowledge: anyone could become the commissioner by typing the
+// commissioner's name on the join screen, and two guests called Dave silently
+// shared one roster row and one score. The id is now minted per device and
+// kept in localStorage, so a reload still rejoins as the same player while the
+// name stays nothing more than a label.
+function deviceId() {
+  const mint = () => "p_" + Math.random().toString(36).slice(2, 12) +
+                     Math.random().toString(36).slice(2, 12);
+  try {
+    const k = "loog.device";
+    let v = localStorage.getItem(k);
+    if (!v) {
+      // crypto.randomUUID needs a secure context, which a LAN http:// host is
+      // not — fall back rather than throw on draft night.
+      v = (typeof crypto !== "undefined" && crypto.randomUUID)
+        ? "p_" + crypto.randomUUID().replace(/-/g, "").slice(0, 20)
+        : mint();
+      localStorage.setItem(k, v);
+    }
+    return v;
+  } catch (e) {
+    // Private browsing: no persistence, so a reload reads as a new player.
+    return mint();
+  }
+}
 function shuffle(a) { const r = a.slice(); for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; }
 function fmt(ms) { return (ms / 1000).toFixed(1) + "s"; }
 function pts(n) { return n + (n === 1 ? " pt" : " pts"); }
@@ -1150,7 +1184,7 @@ class Component extends DCLogic {
     const code = this.state.joinCode.trim().toUpperCase(), name = this.state.joinName.trim();
     if (code.length !== 4) return this.setState({ joinNote: "Room codes are four letters.", joinBad: true });
     if (!name) return this.setState({ joinNote: "We need a name for the draft board.", joinBad: true });
-    const id = "p_" + name.toLowerCase().replace(/\s+/g, "-");
+    const id = deviceId();
     try { localStorage.setItem("loog.name", name); } catch (e) {}
     this.setState({ screen: "player", code, myId: id, myName: name, joinNote: "", joinBad: false, snap: null }, () => {
       this.openChannel(code, "player");
@@ -1162,13 +1196,25 @@ class Component extends DCLogic {
   hostJoin(id, name) {
     if (!id || !name) return;
     const players = this.state.players.slice();
-    // A rejoining player needs the current state at once — the host otherwise
-    // stays silent until the next question and their screen looks dead.
-    if (players.some((p) => p.id === id)) { this.broadcast(); return; }
-    {
-      if (this.state.phase !== "lobby" && this.state.phase !== "results") { /* rejoin allowed anyway */ }
-      players.push({ id, name, score: 0, timeMs: 0, demo: false });
+    const mine = players.find((p) => p.id === id);
+    if (mine) {
+      // A rejoining player needs the current state at once — the host otherwise
+      // stays silent until the next question and their screen looks dead.
+      // A rename is honoured only if the new label is free; the id itself is
+      // never reassigned, so a claimed seat cannot be taken over.
+      if (mine.name !== name && !players.some((p) => p.id !== id && p.name === name)) {
+        players[players.indexOf(mine)] = Object.assign({}, mine, { name });
+        this.setState({ players }, this.broadcast);
+        return;
+      }
+      this.broadcast();
+      return;
     }
+    // Ids are random now, so two people really can share a display name where
+    // they used to collide into one row. Disambiguate rather than merge.
+    let label = name;
+    for (let n = 2; players.some((p) => p.name === label); n++) label = name + " (" + n + ")";
+    players.push({ id, name: label, score: 0, timeMs: 0, demo: false });
     this.setState({ players }, this.broadcast);
   }
   addDemo = () => {
@@ -1183,7 +1229,7 @@ class Component extends DCLogic {
   }
   hostCmd(id, c) {
     if (!id || id !== this.state.commishId) return;
-    if (c === "start" && this.state.phase === "lobby") this.startGame();
+    if (c === "start" && this.state.phase === "lobby") this.beginGame();
     if (c === "whistle" && this.state.phase === "question") this.endQuestion();
     if (c === "next" && this.state.phase === "results") this.nextQuestion();
   }
@@ -1198,9 +1244,17 @@ class Component extends DCLogic {
     });
     return out;
   }
-  startGame = () => {
+  beginGame() {
     if (!this.state.players.length) return;
+    if (this.state.phase !== "lobby") return;
     this.setState({ questions: this.drawQuestions(), qIndex: 0, answers: {} }, () => this.beginQuestion(0));
+  }
+  // The TV's own button. Once someone holds the remote the TV is a display,
+  // and the greyed-out button below is backed by this check rather than
+  // relying on the markup alone.
+  startGame = () => {
+    if (this.state.commishId) return;
+    this.beginGame();
   };
   beginQuestion(i) {
     this.stopClock(); this.clearDemo();
@@ -1390,7 +1444,10 @@ class Component extends DCLogic {
     if (sc === "player") {
       const s = st.snap;
       const me = s ? (s.board || []).find((b) => b.id === st.myId) : null;
-      v.myName = st.myName;
+      // The board may have disambiguated this player's label (two Marcuses),
+      // so show them what everyone else sees rather than what they typed.
+      // The snapshot carries `board`, not `players` — `me` is already it.
+      v.myName = (me && me.name) || st.myName;
       v.myScore = me ? me.score : 0;
       const phase = s ? s.phase : null;
       v.pWaiting = !s || phase === "lobby";
@@ -1482,10 +1539,13 @@ class Component extends DCLogic {
       }));
       const cName = (st.players.find((p) => p.id === cid) || {}).name;
       v.remoteNote = cName ? `${cName} has the remote` : "";
+      v.tvStartLocked = !!cName;
+      v.tvStartOwned = !cName;
+      v.tvStartNote = cName ? `${cName} kicks off from their phone.` : "";
       v.lobbyHint = !st.players.length
         ? "Waiting on the first check-in."
         : cName
-          ? `${cName} runs the game from their phone. Buttons on this screen still work as a backup.`
+          ? `${cName} runs the game from their phone. Tap their name again to take the remote back. Whistle and next-question still work here as a backup.`
           : `${12 - st.players.length} more can still join. Tap a name above to hand over the remote.`;
       const local = location.protocol === "file:" || !location.host;
       v.hasQr = !local && !st.qrFail;
