@@ -502,14 +502,131 @@ h1,h2,h3,h4,h5,h6{
 @keyframes lofgTabDrop{from{transform:scaleY(0)}to{transform:scaleY(1)}}
 @keyframes lofgStakesIn{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:none}}
 @keyframes lofgOnAirPunch{0%{opacity:0;transform:scale(1.6)}55%{opacity:1;transform:scale(.94)}100%{opacity:1;transform:scale(1)}}
-/* The red wipe that hands off to DRIVE 1. */
-@keyframes lofgWipe{0%{transform:translateX(-101%)}55%{transform:translateX(0)}100%{transform:translateX(101%)}}
+/* ── THE WIPE THAT HANDS OFF TO DRIVE 1 ───────────────────────────────────
+   Two angled panels, not one flat slab. A broadcast wipe is raked and it
+   carries a highlight; a perpendicular rectangle of solid colour reads as a
+   CSS transition, which is what this was.
+   The panels are oversized (top/bottom -12%, left/right -25%) because a
+   skewed rectangle no longer covers the corners at translateX(0) — and full
+   coverage at that instant is load-bearing, not cosmetic: the phase change
+   to drive 1 happens underneath it. Skew of 17deg over a 16:9 viewport
+   displaces about 12vw; the 25vw of slack on each side absorbs it.
+   Travel is +/-90% of the element's own (150vw) width, which is past the
+   viewport on both sides. */
+@keyframes lofgWipe{0%{transform:translateX(-90%) skewX(-12deg)}55%{transform:translateX(0) skewX(-12deg)}100%{transform:translateX(90%) skewX(-12deg)}}
+/* The navy panel runs 120ms ahead at a steeper rake, so the two edges
+   converge into a wedge instead of arriving as one wall. Depth only —
+   nothing is timed against it and it may drop out with no consequence. */
+@keyframes lofgWipeLead{0%{transform:translateX(-90%) skewX(-17deg)}55%{transform:translateX(0) skewX(-17deg)}100%{transform:translateX(90%) skewX(-17deg)}}
+/* The kickoff plate rises under the floodlight beat and is gone by the time
+   the title slams, handing the screen back to the typography. */
+@keyframes lofgPlateIn{from{opacity:0}to{opacity:.85}}
+@keyframes lofgPlateOut{from{opacity:.85}to{opacity:0}}
+/* The league ident — the network card a broadcast opens on, before anything
+   about tonight's game. Leaves with the roster. */
+@keyframes lofgIdentIn{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+@keyframes lofgIdentOut{from{opacity:1}to{opacity:0}}
+/* The defending-champion lower-third: slides in off the left like a graphics
+   operator punching up a chyron, overshoots a hair, settles. */
+@keyframes lofgChampIn{0%{opacity:0;transform:translateX(-34px)}60%{opacity:1;transform:translateX(3px)}100%{opacity:1;transform:none}}
 
 .lofg-intro{
   position:fixed;inset:0;z-index:60;overflow:hidden;cursor:pointer;
   display:grid;align-content:center;justify-items:start;
   padding:clamp(28px,5vw,90px);
   background:var(--color-bg);
+}
+/* ── THE KICKOFF PLATE ─────────────────────────────────────────────────────
+   A lit-stadium clip under the first half of the cold open. Three properties
+   make it safe to add to a sequence that is otherwise tuned to the frame:
+
+   1. It is decoration with a hard floor. The sequence's own background is
+      already navy, and nothing in it is positioned or timed against the
+      plate, so a file that 404s, stalls on a hotspot, or is refused by an
+      autoplay policy leaves the cold open exactly as it shipped without it.
+   2. It is not in the bundle. ~2.3MB against a 465KB page that has to open
+      over a phone hotspot, and only the host screen ever renders it — so it
+      is a sibling file the eleven phones never request, warmed during the
+      lobby so kickoff is not waiting on the network.
+   3. It is silent as a file, not by attribute. The audio track is stripped
+      out of the mp4 itself; `muted` here is belt-and-braces for autoplay,
+      not the thing keeping DESIGN.md's silence rule.
+
+   Measured before shipping: across the clip, the band where the intro's type
+   sits peaks at relative luminance .061, so #f0ecdf holds 7.95:1 even at full
+   opacity — comfortably past AAA. The .85 below is taste, not the guardrail. */
+.lofg-intro-plate{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;
+  /* Crop the lower edge of the source: it carries a faintly green field and
+     yellow uprights, and DESIGN.md keeps turf out of the system and holds
+     yellow for a penalty flag. */
+  object-position:50% 32%;
+  pointer-events:none;  /* click-to-skip belongs to .lofg-intro */
+  z-index:0;            /* first in DOM and level 0: everything else paints over it */
+  opacity:0;
+  animation:lofgPlateIn .9s ease-out both, lofgPlateOut .8s ease-in 4.2s both;
+}
+/* Warms the HTTP cache while the room fills up, so the plate is already
+   local when the commissioner hits Kick off. Host lobby only. */
+.lofg-plate-preload{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+
+/* ── LEAGUE IDENT ──────────────────────────────────────────────────────────
+   Top-left, over the floodlight and the roster call: who this is, and what
+   season it is. Broadcast order — the league before the show. It leaves on
+   the same beat as the roster so the title slam lands on a clear frame. */
+.lofg-intro-ident{
+  position:absolute;top:clamp(28px,5vw,90px);left:clamp(28px,5vw,90px);right:clamp(28px,5vw,90px);
+  /* Deliberately no z-index. It already paints above the plate by DOM order,
+     and a positive z-index would lift it ABOVE the wipe panels — which are
+     z-index:auto — so the ident would survive the wipe that is supposed to
+     cover the whole screen at the cut. Today that is masked by the ident
+     being opacity:0 long before the wipe runs, but the cut seam must not
+     depend on an unrelated fade-out. */
+  display:flex;align-items:center;gap:clamp(10px,1.4vw,20px);
+  animation:lofgIdentIn .7s ease-out .55s both, lofgIdentOut .4s ease-in 3.85s both;
+}
+.lofg-intro-league,.lofg-intro-season{
+  font-family:var(--font-heading);font-style:italic;font-weight:700;
+  text-transform:uppercase;letter-spacing:.16em;white-space:nowrap;
+}
+.lofg-intro-league{font-size:clamp(12px,1.25vw,21px);color:var(--color-text)}
+.lofg-intro-season{font-size:clamp(11px,1.05vw,18px);color:var(--color-muted)}
+/* DESIGN.md: an eyebrow pairs with a yard-line rule — 1px line + hash ticks. */
+.lofg-intro-ident-rule{
+  flex:1;min-width:24px;height:7px;
+  background:
+    linear-gradient(var(--color-line),var(--color-line)) left center/100% 1px no-repeat,
+    repeating-linear-gradient(90deg,var(--color-line) 0 1px,transparent 1px 14px);
+}
+@media (max-width:620px){ .lofg-intro-season,.lofg-intro-ident-rule{display:none} }
+
+/* ── DEFENDING CHAMPION ────────────────────────────────────────────────────
+   The chyron hero from DESIGN.md — position-color tab on the left edge,
+   italic condensed eyebrow, condensed 800 caps name.
+   Green, not gold. In this system yellow is the penalty flag and red is
+   live-only, so the obvious "champion = gold" would read as a blown call.
+   Green is the field: points scored, and a title is the most scored thing
+   there is. */
+.lofg-intro-champ{
+  position:relative;padding-left:22px;
+  display:flex;flex-direction:column;gap:clamp(3px,.7vh,9px);
+  animation:lofgChampIn .5s cubic-bezier(.16,1,.3,1) 6.35s both;
+}
+.lofg-intro-champ span.tab{
+  position:absolute;left:0;top:0;bottom:0;width:12px;
+  background:var(--color-accent);transform-origin:top;
+  animation:lofgTabDrop .3s ease-out 6.5s both;
+}
+.lofg-intro-champ-eyebrow{
+  font-family:var(--font-heading);font-style:italic;font-weight:700;
+  text-transform:uppercase;letter-spacing:.18em;
+  font-size:clamp(12px,1.35vw,23px);color:var(--color-accent-300);
+}
+.lofg-intro-champ-name{
+  font-family:var(--font-heading);font-weight:800;text-transform:uppercase;
+  font-size:clamp(28px,4.2vw,72px);line-height:.92;letter-spacing:.01em;
+  color:var(--color-text);
 }
 .lofg-intro-roster,.lofg-intro-card{grid-area:1/1;align-self:center}
 .lofg-intro-card{
@@ -547,12 +664,35 @@ h1,h2,h3,h4,h5,h6{
 .lofg-intro-stakes{
   font-family:var(--font-heading);font-style:italic;font-weight:700;text-transform:uppercase;
   letter-spacing:.16em;font-size:clamp(15px,2vw,34px);color:var(--color-accent-300);
-  animation:lofgStakesIn .45s cubic-bezier(.16,1,.3,1) 5.5s both;
+  animation:lofgStakesIn .45s cubic-bezier(.16,1,.3,1) 5.2s both;
 }
-.lofg-intro-onair{animation:lofgOnAirPunch .45s cubic-bezier(.16,1,.3,1) 7s both;font-size:clamp(15px,1.8vw,30px);padding:10px 18px}
+.lofg-intro-onair{animation:lofgOnAirPunch .45s cubic-bezier(.16,1,.3,1) 8.35s both;font-size:clamp(15px,1.8vw,30px);padding:10px 18px}
+/* The navy leading panel. Behind the red one and 120ms early, so its rake
+   shows ahead of the red edge. */
+.lofg-intro-wipe-lead{
+  position:absolute;top:-12%;bottom:-12%;left:-25%;right:-25%;
+  background:var(--color-surface);pointer-events:none;
+  animation:lofgWipeLead 1.05s cubic-bezier(.7,0,.3,1) 9.35s both;
+}
+/* The red panel is the one that guarantees coverage. INTRO_MS is keyed to
+   THIS animation — its delay and duration, and the keyframe stop where it
+   reaches translateX(0). A test derives that arithmetic from this rule, so
+   retiming here without moving INTRO_MS fails the build. */
 .lofg-intro-wipe{
-  position:absolute;inset:0;background:var(--color-onair);pointer-events:none;
-  animation:lofgWipe 1.05s cubic-bezier(.7,0,.3,1) 8.05s both;
+  position:absolute;top:-12%;bottom:-12%;left:-25%;right:-25%;
+  background:var(--color-onair);pointer-events:none;
+  /* Yard lines ride across on the red, so what sweeps the screen is the
+     field rather than a rectangle of paint. */
+  background-image:repeating-linear-gradient(90deg,
+    rgba(255,255,255,.11) 0 1px, transparent 1px 120px);
+  animation:lofgWipe 1.05s cubic-bezier(.7,0,.3,1) 9.4s both;
+}
+/* Hot leading edge with the ON AIR glow — a broadcast wipe carries a
+   highlight rather than a hard colour boundary. */
+.lofg-intro-wipe::after{
+  content:"";position:absolute;top:0;bottom:0;right:-2px;width:5px;
+  background:var(--color-text);
+  box-shadow:0 0 26px 6px rgba(212,24,24,.85), 0 0 64px 14px rgba(212,24,24,.42);
 }
 
 /* Reduced motion: the sequence collapses to a static card. The kickoff timer
@@ -562,8 +702,10 @@ h1,h2,h3,h4,h5,h6{
 @media (prefers-reduced-motion: reduce){
   .lofg-intro,.lofg-intro *{animation-duration:.01ms !important;animation-delay:0ms !important;animation-iteration-count:1 !important}
   .lofg-intro{animation:none !important}
-  .lofg-intro-roster,.lofg-intro-wipe{display:none}
-  .lofg-intro-title,.lofg-intro-stakes,.lofg-intro-onair{opacity:1 !important;transform:none !important}
+  /* The plate is motion by definition — a moving camera cannot be collapsed
+     to a static frame the way an animation can, so it does not render at all. */
+  .lofg-intro-roster,.lofg-intro-wipe,.lofg-intro-wipe-lead,.lofg-intro-plate{display:none}
+  .lofg-intro-title,.lofg-intro-stakes,.lofg-intro-onair,.lofg-intro-ident,.lofg-intro-champ{opacity:1 !important;transform:none !important}
   *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
 }
 :root{--app-h:100vh}
@@ -830,13 +972,23 @@ p{letter-spacing:.005em}
         </div>
         <div style="font-size:13px;color:color-mix(in srgb,var(--color-text) 40%,transparent)">{{ lobbyHint }}</div>
       </div>
+      <!-- Not shown: this pulls the kickoff plate into cache while the room
+           fills, so hitting Kick off on a hotspot does not open on a black
+           frame. Host lobby only — the phones never request the file. -->
+      <video class="lofg-plate-preload" src="kickoff-plate.mp4" preload="auto" muted playsinline aria-hidden="true" tabindex="-1"></video>
     </div>
   </sc-if>
 
   <sc-if value="{{ hIntro }}" hint-placeholder-val="{{ false }}">
     <div class="lofg-intro" sc-camel-on-click="{{ skipIntro }}">
+      <video class="lofg-intro-plate" src="kickoff-plate.mp4" autoplay muted playsinline preload="auto" aria-hidden="true" tabindex="-1"></video>
       <div class="lofg-intro-flood"></div>
       <div class="lofg-intro-yard"></div>
+      <div class="lofg-intro-ident">
+        <span class="lofg-intro-league">League of Ordinary Gentlemen</span>
+        <span class="lofg-intro-ident-rule"></span>
+        <span class="lofg-intro-season">{{ introSeason }}</span>
+      </div>
       <div class="lofg-intro-roster">
         <sc-for list="{{ introRoster }}" as="n" hint-placeholder-count="8">
           <span class="lofg-intro-name" style="animation:lofgNameSlam .3s cubic-bezier(.16,1,.3,1) {{ n.delay }} both">{{ n.name }}</span>
@@ -845,8 +997,16 @@ p{letter-spacing:.005em}
       <div class="lofg-intro-card">
         <div class="lofg-intro-title"><span class="tab"></span><h1>Draft Order Challenge</h1></div>
         <div class="lofg-intro-stakes">{{ introStakes }}</div>
+        <sc-if value="{{ hasChampion }}" hint-placeholder-val="{{ true }}">
+        <div class="lofg-intro-champ">
+          <span class="tab"></span>
+          <span class="lofg-intro-champ-eyebrow">{{ introChampionLabel }}</span>
+          <span class="lofg-intro-champ-name">{{ introChampion }}</span>
+        </div>
+        </sc-if>
         <span class="onair lofg-intro-onair"><span class="onair-dot"></span>On air</span>
       </div>
+      <div class="lofg-intro-wipe-lead"></div>
       <div class="lofg-intro-wipe"></div>
     </div>
   </sc-if>
@@ -1014,9 +1174,23 @@ p{letter-spacing:.005em}
 const SB_URL = "https://qbzsinhlzuxdjvwfurxe.supabase.co";
 const SB_KEY = "sb_publishable_qMEuvB-ugPpbf26vZYCrhg_-AY6hull";
 const QUESTION_SECONDS = 30;
+// ── The two lines to edit each August ────────────────────────────────────
+// Who is defending, and what season this is. Both are typography, not part
+// of the kickoff video: generative video renders lettering as garbage, and a
+// name spelled wrong on the TV in front of the whole league is not a thing
+// you want to need 12 credits and a re-roll to fix.
+// Clearing DEFENDING_CHAMPION drops the beat and leaves a held frame in its
+// place — the sequence still runs, it just has a pause where the chyron was.
+const DEFENDING_CHAMPION = "Zach West";
+const DEFENDING_CHAMPION_LABEL = "Defending champion";
+const SEASON_LABEL = "2026 fantasy football draft";
+
 // Length of the cold open. The CSS beats are keyed to the same numbers; if
 // this changes, the animation-delays in .lofg-intro-* have to move with it.
-const INTRO_MS = 8650;
+// The game is cut in *under* the wipe, at the moment it covers the screen —
+// that is the wipe's delay (9.4s) plus 55% of its 1.05s run, which is where
+// the lofgWipe keyframe reaches translateX(0). A test pins this arithmetic.
+const INTRO_MS = 9980;
 const INTRO_REDUCED_MS = 900;
 function prefersReducedMotion() {
   try { return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); }
@@ -1667,6 +1841,10 @@ class Component extends DCLogic {
           name: p.name, delay: (1.2 + i * 0.14).toFixed(2) + "s"
         }));
         v.introStakes = st.players.length + " in \u00b7 12 drives \u00b7 winner picks first";
+        v.introSeason = SEASON_LABEL;
+        v.hasChampion = !!DEFENDING_CHAMPION;
+        v.introChampion = DEFENDING_CHAMPION;
+        v.introChampionLabel = DEFENDING_CHAMPION_LABEL;
       }
       v.playerCount = st.players.length;
       v.hostMeta = st.phase === "lobby" ? `${st.players.length} players \u00b7 room ${st.code}` : `Room ${st.code} \u00b7 ${st.players.length} players`;
