@@ -57,6 +57,28 @@ the original bundle even when every decoded byte matches.
 
 To preview locally, `python3 -m http.server` and open `index.html`.
 
+## Tests
+
+```sh
+node test/qr.test.js        # QR encoder conformance
+```
+
+The QR encoder is hand-rolled (`src/vendor/qr.js`) and shipped broken for
+weeks: it wrote format information 4 bits away from any legal BCH(15,5)
+codeword, and BCH corrects at most 3, so every decoder rejected the symbol
+before reading the data. It fails silently — the canvas renders something
+QR-shaped and nothing throws, so the only symptom is phones not scanning.
+
+The tests assert what a decoder actually reads: format info is a legal
+codeword, both copies agree, EC level is M, finders and timing are intact,
+the fixed dark module is set. Run them after touching `qr.js`.
+
+Do not diagnose QR problems by diffing the module matrix against a reference
+encoder — a legal but different mask choice flips ~50% of the data region and
+is indistinguishable from corruption. Decode the format bits and check them
+against the 32 legal codewords, or decode the rendered canvas with Chrome's
+`BarcodeDetector` alongside a known-good control image.
+
 After changing `index.html`, copy it to the war room repo at
 `league/index.html` so `/challenge` serves the same build.
 
