@@ -811,7 +811,6 @@ p{letter-spacing:.005em}
           <button sc-camel-on-click="{{ startGame }}" style="cursor:pointer;min-height:62px;padding:0 34px;border-radius:var(--radius-md);border:1px solid var(--color-onair);background:var(--color-onair);color:#fff;font-family:var(--font-heading);font-size:clamp(24px,1.9vw,36px);font-weight:800;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;box-shadow:0 0 22px rgba(212,24,24,.4)" style-hover="background:#ee2020;border-color:#ee2020">Kick off</button>
           </sc-if>
           <button sc-camel-on-click="{{ addDemo }}" style="cursor:pointer;min-height:58px;padding:0 22px;border-radius:var(--radius-md);border:1px solid #2b3d59;background:transparent;color:color-mix(in srgb,var(--color-text) 70%,transparent);font-size:clamp(14px,1.2vw,17px);white-space:nowrap" style-hover="border-color:var(--color-accent-600);color:var(--color-text)">Fill the roster (demo)</button>
-          <button sc-camel-on-click="{{ toggleMuted }}" style="cursor:pointer;min-height:58px;padding:0 20px;border-radius:var(--radius-md);border:1px solid #2b3d59;background:transparent;color:color-mix(in srgb,var(--color-text) 55%,transparent);font:italic 700 15px/1 var(--font-heading);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap" style-hover="border-color:var(--color-accent-600);color:var(--color-text)">{{ mutedLabel }}</button>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:12px">
@@ -1201,7 +1200,6 @@ class Component extends DCLogic {
     phase: "lobby", qIndex: 0, questions: [], players: [], answers: {},
     secondsLeft: QUESTION_SECONDS, revealCount: 0, copied: false, qrFail: false,
     commishId: "", scanned: false,
-    muted: (function () { try { return localStorage.getItem("loog.muted") !== "0"; } catch (e) { return true; } })(),
     snap: null
   };
 
@@ -1345,93 +1343,6 @@ class Component extends DCLogic {
     if (c === "next" && this.state.phase === "results") this.nextQuestion();
   }
   sendCmd = (c) => this.send({ t: "cmd", id: this.state.myId, c });
-  // Synthesized, not sampled: the bundle cannot fetch assets. A sub drop plus
-  // a noise riser reads as "broadcast" far more reliably than a faked brass
-  // line, which without samples lands closer to a ringtone. Host screen only;
-  // the Kick off click is the gesture that unlocks the context. Wrapped so a
-  // blocked or missing AudioContext can never stop a game from starting.
-  playIntro() {
-    if (this.state.muted) return;
-    try {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      const ctx = new AC();
-      this.audioCtx = ctx;
-      if (ctx.state === "suspended" && ctx.resume) ctx.resume();
-      const t0 = ctx.currentTime + 0.05;
-      const master = ctx.createGain();
-      master.gain.value = 0.5;
-      const limiter = ctx.createDynamicsCompressor();
-      limiter.threshold.value = -6;
-      limiter.knee.value = 0;
-      limiter.ratio.value = 20;
-      limiter.attack.value = 0.002;
-      limiter.release.value = 0.15;
-      master.connect(limiter); limiter.connect(ctx.destination);
-
-      const noise = (secs) => {
-        const b = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * secs), ctx.sampleRate);
-        const d = b.getChannelData(0);
-        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-        return b;
-      };
-      const sub = (at, from, to, gain, dur) => {
-        const o = ctx.createOscillator(); o.type = "sine";
-        o.frequency.setValueAtTime(from, at);
-        o.frequency.exponentialRampToValueAtTime(to, at + dur);
-        const g = ctx.createGain();
-        g.gain.setValueAtTime(gain, at);
-        g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-        o.connect(g); g.connect(master); o.start(at); o.stop(at + dur + 0.05);
-      };
-
-      // Riser under the roster call, 280Hz climbing to 6.2k.
-      const rs = ctx.createBufferSource(); rs.buffer = noise(3.4);
-      const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.Q.value = 1.4;
-      bp.frequency.setValueAtTime(280, t0 + 1.2);
-      bp.frequency.exponentialRampToValueAtTime(6200, t0 + 3.9);
-      const rg = ctx.createGain();
-      rg.gain.setValueAtTime(0.0001, t0 + 1.2);
-      rg.gain.exponentialRampToValueAtTime(0.16, t0 + 3.85);
-      rg.gain.exponentialRampToValueAtTime(0.0001, t0 + 4.15);
-      rs.connect(bp); bp.connect(rg); rg.connect(master);
-      rs.start(t0 + 1.2); rs.stop(t0 + 4.3);
-
-      // Impact on the title slam: sub drop plus a short filtered crack.
-      sub(t0 + 4.0, 110, 34, 0.55, 0.9);
-      const cr = ctx.createBufferSource(); cr.buffer = noise(0.5);
-      const cf = ctx.createBiquadFilter(); cf.type = "lowpass"; cf.frequency.value = 2600;
-      const cg = ctx.createGain();
-      cg.gain.setValueAtTime(0.22, t0 + 4.0);
-      cg.gain.exponentialRampToValueAtTime(0.0001, t0 + 4.35);
-      cr.connect(cf); cf.connect(cg); cg.connect(master);
-      cr.start(t0 + 4.0); cr.stop(t0 + 4.5);
-
-      // Stab on ON AIR: detuned saws through a closing lowpass.
-      [0, 7, -5].forEach((cents) => {
-        const o = ctx.createOscillator(); o.type = "sawtooth";
-        o.frequency.value = 98 * Math.pow(2, cents / 1200);
-        const f = ctx.createBiquadFilter(); f.type = "lowpass";
-        f.frequency.setValueAtTime(2200, t0 + 7.0);
-        f.frequency.exponentialRampToValueAtTime(320, t0 + 8.0);
-        const g = ctx.createGain();
-        g.gain.setValueAtTime(0.0001, t0 + 7.0);
-        g.gain.exponentialRampToValueAtTime(0.07, t0 + 7.08);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 8.1);
-        o.connect(f); f.connect(g); g.connect(master);
-        o.start(t0 + 7.0); o.stop(t0 + 8.2);
-      });
-
-      // Final sub under the wipe.
-      sub(t0 + 8.05, 90, 30, 0.45, 0.8);
-    } catch (e) { /* audio is decoration; never let it break kickoff */ }
-  }
-  stopIntro() {
-    if (this.audioCtx) {
-      try { this.audioCtx.close(); } catch (e) {}
-      this.audioCtx = null;
-    }
-  }
   drawQuestions() {
     const out = [];
     TIERS.forEach((t) => {
@@ -1451,7 +1362,6 @@ class Component extends DCLogic {
     const wait = prefersReducedMotion() ? INTRO_REDUCED_MS : INTRO_MS;
     this.setState({ questions: this.drawQuestions(), qIndex: 0, answers: {}, phase: "intro" }, () => {
       this.broadcast();
-      if (!prefersReducedMotion()) this.playIntro();
       this.introTimer = setTimeout(() => { this.introTimer = null; this.beginQuestion(0); }, wait);
     });
   }
@@ -1460,14 +1370,7 @@ class Component extends DCLogic {
   skipIntro = () => {
     if (this.state.phase !== "intro") return;
     if (this.introTimer) { clearTimeout(this.introTimer); this.introTimer = null; }
-    this.stopIntro();
     this.beginQuestion(0);
-  };
-  toggleMuted = () => {
-    const muted = !this.state.muted;
-    try { localStorage.setItem("loog.muted", muted ? "1" : "0"); } catch (e) {}
-    if (muted) this.stopIntro();
-    this.setState({ muted: muted });
   };
   // The TV's own button. Once someone holds the remote the TV is a display,
   // and the greyed-out button below is backed by this check rather than
@@ -1506,7 +1409,6 @@ class Component extends DCLogic {
     if (this.tick) { clearInterval(this.tick); this.tick = null; }
     if (this.revealTimer) { clearInterval(this.revealTimer); this.revealTimer = null; }
     if (this.introTimer) { clearTimeout(this.introTimer); this.introTimer = null; }
-    this.stopIntro();
   }
 
   hostAnswer(id, qIndex, opt) {
@@ -1758,8 +1660,6 @@ class Component extends DCLogic {
       v.hLobby = st.phase === "lobby"; v.hQuestion = st.phase === "question";
       v.hResults = st.phase === "results"; v.hReveal = st.phase === "reveal";
       v.hIntro = st.phase === "intro";
-      v.toggleMuted = this.toggleMuted;
-      v.mutedLabel = st.muted ? "Sound off" : "Sound on";
       if (v.hIntro) {
         v.skipIntro = this.skipIntro;
         // Names arrive 140ms apart starting at 1.2s, matching the CSS beats.
