@@ -704,7 +704,7 @@ p{letter-spacing:.005em}
           </div>
           <sc-if value="{{ hasQr }}" hint-placeholder-val="{{ true }}">
           <div style="flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:clamp(7px,.9vh,11px);border-radius:var(--radius-md);background:var(--color-bg);border:1px solid var(--color-line)">
-            <canvas data-qr="join" style="display:block;width:clamp(74px,8.4vw,124px);height:clamp(74px,8.4vw,124px);border-radius:3px"></canvas>
+            <canvas data-qr="join" style="display:block;width:clamp(124px,13.5vw,248px);height:clamp(124px,13.5vw,248px);border-radius:3px"></canvas>
             <span style="font:italic 700 clamp(11px,.62vw,14px)/1 var(--font-heading);letter-spacing:.14em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 45%,transparent)">Scan to join</span>
           </div>
           </sc-if>
@@ -1128,11 +1128,11 @@ class Component extends DCLogic {
     if (el.__qrFor === url) return;
     try {
       const qr = window.LOOGQR.generate(url);
-      const quiet = 2, mods = qr.size + quiet * 2, scale = 8;
+      const quiet = 4, mods = qr.size + quiet * 2, scale = 8;
       el.width = mods * scale; el.height = mods * scale;
       const cx = el.getContext("2d");
-      cx.fillStyle = "#e9e9ed"; cx.fillRect(0, 0, el.width, el.height);
-      cx.fillStyle = "#161826";
+      cx.fillStyle = "#f4f1e6"; cx.fillRect(0, 0, el.width, el.height);
+      cx.fillStyle = "#0a0c14";
       for (let r = 0; r < qr.size; r++) for (let c = 0; c < qr.size; c++) {
         if (qr.modules[r][c]) cx.fillRect((c + quiet) * scale, (r + quiet) * scale, scale, scale);
       }

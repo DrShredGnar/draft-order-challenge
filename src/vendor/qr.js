@@ -112,16 +112,30 @@
   function placeFormat(g, mask) {
     var bitsF = bchFormat((0x00 << 3) | mask); // level M = 0b00
     var size = g.size;
-    var seq = [];
-    for (var i = 14; i >= 0; i--) seq.push(((bitsF >> i) & 1) === 1);
-    // around top-left
-    var idx = 0;
-    for (var c = 0; c <= 8; c++) { if (c === 6) continue; g.m[8][c] = seq[14 - idx]; idx++; }
-    for (var r = 8; r >= 0; r--) { if (r === 6) continue; g.m[r][8] = seq[14 - idx]; idx++; }
-    // duplicate
-    idx = 0;
-    for (var r2 = size - 1; r2 >= size - 7; r2--) { g.m[r2][8] = seq[14 - idx]; idx++; }
-    for (var c2 = size - 8; c2 < size; c2++) { g.m[8][c2] = seq[14 - idx]; idx++; }
+    function bit(i) { return ((bitsF >> i) & 1) === 1; }
+    // ISO/IEC 18004 8.9. The previous version walked both copies with a single
+    // running index, which put the top-left run in the wrong bit order, wrote
+    // bit 8 over bit 7 at (8,8), shifted every module below it by one, and ran
+    // one past the end of the sequence so (0,8) was written `undefined`. The
+    // resulting 15 bits sat 4 errors away from any legal codeword -- BCH(15,5)
+    // corrects at most 3 -- so every conforming decoder rejected the symbol
+    // before it ever looked at the data. Placement is spelled out explicitly
+    // now rather than derived from a shared counter.
+    var i;
+    // Top-left copy: bits 0-5 down column 8, bit 6 at (7,8), bit 7 at (8,8),
+    // bit 8 at (8,7), then bits 9-14 leftward along row 8.
+    for (i = 0; i <= 5; i++) g.m[i][8] = bit(i);
+    g.m[7][8] = bit(6);
+    g.m[8][8] = bit(7);
+    g.m[8][7] = bit(8);
+    for (i = 9; i < 15; i++) g.m[8][14 - i] = bit(i);
+    // Second copy: bits 0-7 up column 8 from the bottom edge, bits 8-14
+    // leftward along row 8 from the right edge.
+    for (i = 0; i < 8; i++) g.m[size - 1 - i][8] = bit(i);
+    for (i = 8; i < 15; i++) g.m[8][size - 15 + i] = bit(i);
+    // The module above the bottom-left finder is always dark; it shares a cell
+    // with the tail of the run above, so it is written last.
+    g.m[size - 8][8] = true;
   }
 
   function penalty(g) {
