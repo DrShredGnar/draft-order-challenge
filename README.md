@@ -12,9 +12,16 @@ The war room also serves this build at `/challenge` from a vendored copy.
 
 ## Repo layout
 
-`index.html` is a **generated** single-file bundle — ~440KB with React, the
+`index.html` is a **generated** single-file bundle — ~465KB with React, the
 template runtime, Supabase, a QR encoder and all six webfonts inlined as
 base64+gzip. Do not edit it by hand. Edit `src/` and rebuild.
+
+`kickoff-plate.mp4` is the **one deliberate exception** to that: a 5s clip that
+plays under the cold open. It is 2.3MB against a 465KB page that has to open
+over a phone hotspot on draft night, and only the host screen ever renders it —
+so it ships as a sibling file the eleven phones never request. Do not inline it;
+a test in the war room fails the build if a `video/*` mime appears in the asset
+manifest.
 
 ```
 src/template.html       the app: design-system CSS, markup, and game logic
@@ -25,6 +32,7 @@ src/ext_resources.json   \ bundler metadata, carried through untouched
 src/page_order.json      /
 build.py                src/ -> index.html
 unpack.py               index.html -> src/   (recovery only; already done)
+kickoff-plate.mp4       cold-open background clip; NOT bundled (see above)
 ```
 
 `src/template.html` is one file in four parts:
@@ -57,6 +65,14 @@ the original bundle even when every decoded byte matches.
 
 To preview locally, `python3 -m http.server` and open `index.html`.
 
+**The kickoff plate will not play under `http.server`.** It answers a Range
+request with a plain 200 and no `Accept-Ranges`, and Chrome's media pipeline
+will not progressively play a video without byte-range support, so the clip
+sits at `readyState 0` forever and looks like a broken file. GitHub Pages does
+serve 206, so this is a local-only trap. Use any Range-capable static server
+when you need to check the cold open — everything else on the page previews
+fine under `http.server`.
+
 ## Tests
 
 ```sh
@@ -80,7 +96,10 @@ against the 32 legal codewords, or decode the rendered canvas with Chrome's
 `BarcodeDetector` alongside a known-good control image.
 
 After changing `index.html`, copy it to the war room repo at
-`league/index.html` so `/challenge` serves the same build.
+`league/index.html` so `/challenge` serves the same build. Copy
+`kickoff-plate.mp4` across too if it changed — the war room serves it from its
+own route, because `/challenge` has no trailing slash and the page's relative
+`src` therefore resolves to the site root.
 
 ## Design
 
