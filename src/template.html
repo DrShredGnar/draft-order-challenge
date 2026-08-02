@@ -1013,7 +1013,9 @@ p{letter-spacing:.005em}
 
   <sc-if value="{{ hIntro }}" hint-placeholder-val="{{ false }}">
     <div class="lofg-intro" sc-camel-on-click="{{ skipIntro }}">
+      <sc-if value="{{ showIntroPlate }}" hint-placeholder-val="{{ true }}">
       <video class="lofg-intro-plate" src="kickoff-plate.mp4" autoplay muted playsinline preload="auto" aria-hidden="true" tabindex="-1"></video>
+      </sc-if>
       <div class="lofg-intro-flood"></div>
       <div class="lofg-intro-yard"></div>
       <div class="lofg-intro-ident">
@@ -1415,6 +1417,10 @@ class Component extends DCLogic {
     phase: "lobby", qIndex: 0, questions: [], players: [], answers: {},
     secondsLeft: QUESTION_SECONDS, revealCount: 0, copied: false, qrFail: false,
     commishId: "", scanned: false,
+    // Both live media queries, kept in state rather than read during render.
+    // Read-during-render means a preference or window change never triggers
+    // one, so the video would be stuck on whatever was true at mount.
+    tvSized: isTvSized(), reduceMotion: prefersReducedMotion(),
     snap: null
   };
 
@@ -1437,6 +1443,7 @@ class Component extends DCLogic {
     };
     const t0 = Date.now();
     boot();
+    this.watchMedia();
   }
   joinBase() {
     return location.pathname.replace(/index\.html?$/i, "");
@@ -1467,7 +1474,37 @@ class Component extends DCLogic {
     }
   }
   componentDidUpdate() { this.drawQr(); }
-  componentWillUnmount() { this.stopClock(); this.clearDemo(); if (this.ch) this.ch.unsubscribe(); }
+
+  // ---- live media queries ----
+  // The backdrop and the cold open's plate are both gated on these in JS, not
+  // just in CSS. `display:none` does NOT stop a <video preload="auto"> from
+  // downloading — so a reduced-motion host would have pulled 2.3MB for
+  // something the stylesheet then hid, and the CSS rule alone was never
+  // evidence that it hadn't.
+  watchMedia() {
+    if (!window.matchMedia) return;
+    this.mqTv = window.matchMedia("(min-width: 1000px)");
+    this.mqReduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    this.onMedia = () => this.setState({
+      tvSized: !!(this.mqTv && this.mqTv.matches),
+      reduceMotion: !!(this.mqReduce && this.mqReduce.matches)
+    });
+    [this.mqTv, this.mqReduce].forEach((mq) => {
+      if (!mq) return;
+      // addListener is the Safari < 14 spelling; still shipping on older TVs.
+      if (mq.addEventListener) mq.addEventListener("change", this.onMedia);
+      else if (mq.addListener) mq.addListener(this.onMedia);
+    });
+  }
+  unwatchMedia() {
+    [this.mqTv, this.mqReduce].forEach((mq) => {
+      if (!mq || !this.onMedia) return;
+      if (mq.removeEventListener) mq.removeEventListener("change", this.onMedia);
+      else if (mq.removeListener) mq.removeListener(this.onMedia);
+    });
+  }
+
+  componentWillUnmount() { this.stopClock(); this.clearDemo(); this.unwatchMedia(); if (this.ch) this.ch.unsubscribe(); }
 
   // ---- realtime ----
   openChannel(code, role) {
@@ -1774,7 +1811,8 @@ class Component extends DCLogic {
       // audience — a player who types the bare URL instead of scanning the QR
       // lands there — so it is gated on size. Every other screen (join,
       // player, pool) is a phone surface and never renders it.
-      showAmbient: (sc === "host" && st.phase === "lobby") || (sc === "home" && isTvSized()),
+      showAmbient: !st.reduceMotion &&
+        ((sc === "host" && st.phase === "lobby") || (sc === "home" && st.tvSized)),
       goHome: this.goHome, goPool: this.goPool, goJoin: this.goJoin, goHost: this.goHost,
       rtLabel: st.rt === "live" ? "connected to Supabase" : st.rt,
       joinCode: st.joinCode, joinName: st.joinName, onJoinCode: this.onJoinCode, onJoinName: this.onJoinName,
@@ -1883,6 +1921,8 @@ class Component extends DCLogic {
       v.hIntro = st.phase === "intro";
       if (v.hIntro) {
         v.skipIntro = this.skipIntro;
+        // Same reason as showAmbient: CSS hiding does not stop the fetch.
+        v.showIntroPlate = !st.reduceMotion;
         // Names arrive 140ms apart starting at 1.2s, matching the CSS beats.
         v.introRoster = st.players.map((p, i) => ({
           name: p.name, delay: (1.2 + i * 0.14).toFixed(2) + "s"
