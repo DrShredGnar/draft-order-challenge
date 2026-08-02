@@ -567,9 +567,39 @@ h1,h2,h3,h4,h5,h6{
   opacity:0;
   animation:lofgPlateIn .9s ease-out both, lofgPlateOut .8s ease-in 4.2s both;
 }
-/* Warms the HTTP cache while the room fills up, so the plate is already
-   local when the commissioner hits Kick off. Host lobby only. */
-.lofg-plate-preload{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+/* ── AMBIENT PLATE ─────────────────────────────────────────────────────────
+   The same clip, reused as a backdrop on the two screens the room actually
+   stares at: the home chooser and the lobby while people trickle in. It is
+   free. The host already downloads this file during the lobby to warm the
+   cache for the cold open, so this shows those bytes instead of hiding them
+   in a 1x1 preloader — and being visible, it is not subject to whatever
+   deprioritisation a hidden media element gets.
+
+   Same carve-out as the cold open: nothing is being decided on these screens
+   and no clock is running, so "nothing animates near the decision zone" does
+   not apply. It is furniture, not a signature.
+
+   Deliberately NOT looped. A 5s clip on repeat cuts hard back to darkness
+   every five seconds and the seam is the only thing you would notice. Played
+   once it holds on its final frame, so the floodlights come up as the room
+   fills and then stay lit, which is what a stadium does.
+
+   Host-side only — see showAmbient. The eleven phones never render it, and
+   therefore never spend 2.3MB of hotspot on it. */
+.lofg-ambient{
+  position:fixed;inset:0;width:100%;height:100%;
+  object-fit:cover;object-position:50% 30%;
+  z-index:-1;              /* above the wrapper's floodlight+yard-line paint,
+                              below every scrap of content */
+  pointer-events:none;opacity:.30;
+  /* Masked to the top, not scrimmed. The clip's light towers live in the
+     upper frame and every screen using this puts its type lower down, so the
+     video is simply gone before it reaches the room code, the QR or the
+     roster. A mask removes it; a dark scrim would only dim what is already
+     near-black and muddy the towers on the way. */
+  -webkit-mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.55) 38%,transparent 66%);
+  mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.55) 38%,transparent 66%);
+}
 
 /* ── LEAGUE IDENT ──────────────────────────────────────────────────────────
    Top-left, over the floodlight and the roster call: who this is, and what
@@ -704,7 +734,7 @@ h1,h2,h3,h4,h5,h6{
   .lofg-intro{animation:none !important}
   /* The plate is motion by definition — a moving camera cannot be collapsed
      to a static frame the way an animation can, so it does not render at all. */
-  .lofg-intro-roster,.lofg-intro-wipe,.lofg-intro-wipe-lead,.lofg-intro-plate{display:none}
+  .lofg-intro-roster,.lofg-intro-wipe,.lofg-intro-wipe-lead,.lofg-intro-plate,.lofg-ambient{display:none}
   .lofg-intro-title,.lofg-intro-stakes,.lofg-intro-onair,.lofg-intro-ident,.lofg-intro-champ{opacity:1 !important;transform:none !important}
   *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
 }
@@ -724,8 +754,14 @@ p{letter-spacing:.005em}
 </style>
 </helmet>
 
-<div style="min-height:var(--app-h);background-color:var(--color-bg);background-image:radial-gradient(ellipse 900px 380px at 50% -80px, rgba(136,168,232,.07), transparent 70%),repeating-linear-gradient(90deg,transparent 0,transparent 119px,color-mix(in srgb, var(--color-line) 55%, transparent) 119px,color-mix(in srgb, var(--color-line) 55%, transparent) 120px)">
+<div style="position:relative;z-index:0;min-height:var(--app-h);background-color:var(--color-bg);background-image:radial-gradient(ellipse 900px 380px at 50% -80px, rgba(136,168,232,.07), transparent 70%),repeating-linear-gradient(90deg,transparent 0,transparent 119px,color-mix(in srgb, var(--color-line) 55%, transparent) 119px,color-mix(in srgb, var(--color-line) 55%, transparent) 120px)">
 
+<!-- Mounted outside the per-screen blocks on purpose: the host goes home ->
+     lobby, and a per-screen copy would unmount and refetch 2.3MB and restart
+     the ignition from black. One element spans both. -->
+<sc-if value="{{ showAmbient }}" hint-placeholder-val="{{ false }}">
+<video class="lofg-ambient" src="kickoff-plate.mp4" autoplay muted playsinline preload="auto" aria-hidden="true" tabindex="-1"></video>
+</sc-if>
 
 
 <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
@@ -972,10 +1008,6 @@ p{letter-spacing:.005em}
         </div>
         <div style="font-size:13px;color:color-mix(in srgb,var(--color-text) 40%,transparent)">{{ lobbyHint }}</div>
       </div>
-      <!-- Not shown: this pulls the kickoff plate into cache while the room
-           fills, so hitting Kick off on a hotspot does not open on a black
-           frame. Host lobby only — the phones never request the file. -->
-      <video class="lofg-plate-preload" src="kickoff-plate.mp4" preload="auto" muted playsinline aria-hidden="true" tabindex="-1"></video>
     </div>
   </sc-if>
 
@@ -1192,6 +1224,15 @@ const SEASON_LABEL = "2026 fantasy football draft";
 // the lofgWipe keyframe reaches translateX(0). A test pins this arithmetic.
 const INTRO_MS = 9980;
 const INTRO_REDUCED_MS = 900;
+// Is this plausibly the TV rather than somebody's phone? Only used to decide
+// whether the ambient backdrop is worth 2.3MB on this device.
+// 1000px, not 900: an iPhone 15 Pro Max in landscape is 932px wide and would
+// sail under a 900px bar, which is exactly the device the plate's host-only
+// design exists to protect.
+function isTvSized() {
+  try { return !!(window.matchMedia && window.matchMedia("(min-width: 1000px)").matches); }
+  catch (e) { return false; }
+}
 function prefersReducedMotion() {
   try { return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); }
   catch (e) { return false; }
@@ -1728,6 +1769,12 @@ class Component extends DCLogic {
     const st = this.state, sc = st.screen;
     const v = {
       isHome: sc === "home", isPool: sc === "pool", isJoin: sc === "join", isPlayer: sc === "player", isHost: sc === "host",
+      // The lobby is only reachable by clicking "Host TV screen", so it is
+      // always the big screen and always gets the backdrop. Home is mixed
+      // audience — a player who types the bare URL instead of scanning the QR
+      // lands there — so it is gated on size. Every other screen (join,
+      // player, pool) is a phone surface and never renders it.
+      showAmbient: (sc === "host" && st.phase === "lobby") || (sc === "home" && isTvSized()),
       goHome: this.goHome, goPool: this.goPool, goJoin: this.goJoin, goHost: this.goHost,
       rtLabel: st.rt === "live" ? "connected to Supabase" : st.rt,
       joinCode: st.joinCode, joinName: st.joinName, onJoinCode: this.onJoinCode, onJoinName: this.onJoinName,
