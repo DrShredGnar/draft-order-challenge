@@ -30,6 +30,7 @@ src/assets.json         uuid -> vendor file (uuids are stable across builds)
 src/shell.html          the loader that unpacks the bundle in the browser
 src/ext_resources.json   \ bundler metadata, carried through untouched
 src/page_order.json      /
+src/league_pool.json    GENERATED, sealed — the league's own questions
 build.py                src/ -> index.html
 unpack.py               index.html -> src/   (recovery only; already done)
 kickoff-plate.mp4       cold-open background clip; NOT bundled (see above)
@@ -50,12 +51,47 @@ Markup uses a small template DSL, not JSX: `<sc-if value="{{ x }}">`,
 `sc-camel-on-click`. Colours in the view model are CSS variable references
 (`"var(--color-onair)"`), so retuning the token block retunes the whole app.
 
+## The house questions
+
+Three of the twelve tiers' questions each game come from the league's own
+history — every pick of the 2024 and 2025 drafts, both title games, and the
+full weekly scoring table. One per tier, guaranteed rather than left to a
+blind draw across a merged pool: a night that happened to serve zero of them
+would be the old game with extra steps. `LEAGUE_QUOTA` in `src/template.html`
+is that floor; if a tier's house pool ever runs short the rest is topped up
+from the general pool and the tier still yields three.
+
+They are generated in the war room, where the Sleeper history lives:
+
+```sh
+cd ../League_of_ordinary_gentlemen/shreddy_draft
+python3 scripts/pull_league_weeks.py        # refresh league-wide weekly scores
+python3 scripts/gen_league_questions.py     # -> ../../draft-order-challenge/src/league_pool.json
+cd ../../draft-order-challenge && python3 build.py
+```
+
+Re-run both after each season ends. `gen_league_questions.py --check`
+validates and reports per-tier counts without writing.
+
+`league_pool.json` is base64 and that is a **spoiler guard, not secrecy**. The
+commissioner runs the generator, reviews the diff, and pushes the commit, so a
+plaintext pool would spoil itself before it ever shipped. Against a player it
+buys nothing: `index.html` is public and the 120 general questions have always
+sat in it in plain text. The seal on this game has always been social.
+
 ## Build
 
 ```sh
 python3 build.py           # rebuild index.html from src/
 python3 build.py --check   # rebuild in memory, diff against committed index.html
 ```
+
+`build.py` substitutes `league_pool.json` into the template at the
+`{{__LEAGUE_POOL__}}` marker, so the generated blob never lands in the
+authored source. With that file absent the build still succeeds and the game
+falls back to three general questions per tier — but a *malformed* seal is a
+hard error, because a silently empty pool looks exactly like a working game
+until the night it matters.
 
 `--check` compares *semantically* — the loader shell, the four data tags, and
 every asset's decompressed bytes. It deliberately does not byte-compare the
