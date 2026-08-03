@@ -3,10 +3,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>League of Ordinary Gentlemen — Draft Order Challenge</title>
-<meta name="description" content="Twelve questions of football trivia decide the fantasy draft order. Winner picks first.">
+<meta name="description" content="Twelve questions of football trivia decide the draft order. Winner takes first pick.">
 <meta name="theme-color" content="#161826">
 <meta property="og:title" content="League of Ordinary Gentlemen — Draft Order Challenge">
-<meta property="og:description" content="Twelve questions of football trivia decide the fantasy draft order. Winner picks first.">
+<meta property="og:description" content="Twelve questions of football trivia decide the draft order. Winner takes first pick.">
 <script src="4882ea57-300d-4157-9920-b486a1b0d129"></script>
 </head>
 <body>
@@ -501,7 +501,6 @@ h1,h2,h3,h4,h5,h6{
 @keyframes lofgTitleSlam{0%{opacity:0;transform:scale(1.8);letter-spacing:.14em}60%{opacity:1;transform:scale(.97);letter-spacing:.005em}100%{opacity:1;transform:scale(1)}}
 @keyframes lofgTabDrop{from{transform:scaleY(0)}to{transform:scaleY(1)}}
 @keyframes lofgStakesIn{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:none}}
-@keyframes lofgOnAirPunch{0%{opacity:0;transform:scale(1.6)}55%{opacity:1;transform:scale(.94)}100%{opacity:1;transform:scale(1)}}
 /* ── THE WIPE THAT HANDS OFF TO DRIVE 1 ───────────────────────────────────
    Two angled panels, not one flat slab. A broadcast wipe is raked and it
    carries a highlight; a perpendicular rectangle of solid colour reads as a
@@ -641,12 +640,12 @@ h1,h2,h3,h4,h5,h6{
 .lofg-intro-champ{
   position:relative;padding-left:22px;
   display:flex;flex-direction:column;gap:clamp(3px,.7vh,9px);
-  animation:lofgChampIn .5s cubic-bezier(.16,1,.3,1) 6.35s both;
+  animation:lofgChampIn .5s cubic-bezier(.16,1,.3,1) 10.9s both;
 }
 .lofg-intro-champ span.tab{
   position:absolute;left:0;top:0;bottom:0;width:12px;
   background:var(--color-accent);transform-origin:top;
-  animation:lofgTabDrop .3s ease-out 6.5s both;
+  animation:lofgTabDrop .3s ease-out 11.05s both;
 }
 .lofg-intro-champ-eyebrow{
   font-family:var(--font-heading);font-style:italic;font-weight:700;
@@ -691,18 +690,28 @@ h1,h2,h3,h4,h5,h6{
 .lofg-intro-title{position:relative;padding-left:26px;opacity:0;animation:lofgTitleSlam .5s cubic-bezier(.16,1,.3,1) 4s both}
 .lofg-intro-title span.tab{position:absolute;left:0;top:0;bottom:0;width:16px;background:var(--color-onair);transform-origin:top;animation:lofgTabDrop .3s ease-out 4.15s both}
 .lofg-intro-title h1{font-size:clamp(46px,9vw,150px);margin:0;line-height:.9;box-shadow:0 -3px 0 0 var(--color-onair) inset}
-.lofg-intro-stakes{
+.lofg-intro-stakes,.lofg-intro-stakes2{
   font-family:var(--font-heading);font-style:italic;font-weight:700;text-transform:uppercase;
-  letter-spacing:.16em;font-size:clamp(15px,2vw,34px);color:var(--color-accent-300);
-  animation:lofgStakesIn .45s cubic-bezier(.16,1,.3,1) 5.2s both;
+  letter-spacing:.16em;color:var(--color-accent-300);
 }
-.lofg-intro-onair{animation:lofgOnAirPunch .45s cubic-bezier(.16,1,.3,1) 8.35s both;font-size:clamp(15px,1.8vw,30px);padding:10px 18px}
+/* Two stakes beats, one per line of the voice-over: "twelve questions
+   decide the draft order" lands at 6.0s, "winner takes first pick" at
+   8.9s. Split so the screen moves when the read moves, rather than one
+   long line sitting still for three seconds. */
+.lofg-intro-stakes{
+  font-size:clamp(15px,2vw,34px);
+  animation:lofgStakesIn .45s cubic-bezier(.16,1,.3,1) 6s both;
+}
+.lofg-intro-stakes2{
+  font-size:clamp(14px,1.75vw,30px);color:var(--color-text);
+  animation:lofgStakesIn .45s cubic-bezier(.16,1,.3,1) 8.9s both;
+}
 /* The navy leading panel. Behind the red one and 120ms early, so its rake
    shows ahead of the red edge. */
 .lofg-intro-wipe-lead{
   position:absolute;top:-12%;bottom:-12%;left:-25%;right:-25%;
   background:var(--color-surface);pointer-events:none;
-  animation:lofgWipeLead 1.05s cubic-bezier(.7,0,.3,1) 9.35s both;
+  animation:lofgWipeLead 1.05s cubic-bezier(.7,0,.3,1) 13.55s both;
 }
 /* The red panel is the one that guarantees coverage. INTRO_MS is keyed to
    THIS animation — its delay and duration, and the keyframe stop where it
@@ -715,7 +724,7 @@ h1,h2,h3,h4,h5,h6{
      field rather than a rectangle of paint. */
   background-image:repeating-linear-gradient(90deg,
     rgba(255,255,255,.11) 0 1px, transparent 1px 120px);
-  animation:lofgWipe 1.05s cubic-bezier(.7,0,.3,1) 9.4s both;
+  animation:lofgWipe 1.05s cubic-bezier(.7,0,.3,1) 13.6s both;
 }
 /* Hot leading edge with the ON AIR glow — a broadcast wipe carries a
    highlight rather than a hard colour boundary. */
@@ -735,7 +744,7 @@ h1,h2,h3,h4,h5,h6{
   /* The plate is motion by definition — a moving camera cannot be collapsed
      to a static frame the way an animation can, so it does not render at all. */
   .lofg-intro-roster,.lofg-intro-wipe,.lofg-intro-wipe-lead,.lofg-intro-plate,.lofg-ambient{display:none}
-  .lofg-intro-title,.lofg-intro-stakes,.lofg-intro-onair,.lofg-intro-ident,.lofg-intro-champ{opacity:1 !important;transform:none !important}
+  .lofg-intro-title,.lofg-intro-stakes,.lofg-intro-stakes2,.lofg-intro-ident,.lofg-intro-champ{opacity:1 !important;transform:none !important}
   *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
 }
 :root{--app-h:100vh}
@@ -782,7 +791,7 @@ p{letter-spacing:.005em}
       <span style="flex:none;display:flex;align-items:center;padding:10px 14px;font-family:var(--font-heading);font-style:italic;font-weight:700;font-size:14px;line-height:1;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap;color:var(--color-muted)">12 picks</span>
       <span style="flex:1 1 20ch;min-width:0;display:flex;align-items:center;padding:10px 14px;font-size:12.5px;line-height:1.45;text-wrap:pretty;color:var(--color-muted)">Decided on the field, not by a random number generator.</span>
     </div>
-    <p style="font-size:14px;line-height:1.6;max-width:62ch;color:var(--color-muted);margin:0;text-wrap:pretty">Twelve questions, four tiers, thirty seconds each. Every question is drawn at random from a sealed pool at kickoff — the commissioner plays as blind as everyone else. The final scoreboard becomes the draft board.</p>
+    <p style="font-size:14px;line-height:1.6;max-width:62ch;color:var(--color-muted);margin:0;text-wrap:pretty">Twelve questions, four tiers, thirty seconds each. Every question is drawn at random from a sealed pool at kickoff — the commissioner plays as blind as everyone else. The final scoreboard becomes the draft board — twelve questions decide the draft order, and the winner takes first pick.</p>
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px">
     <button sc-camel-on-click="{{ goHost }}" style="text-align:left;cursor:pointer;background:var(--color-surface);border:1px solid var(--color-line);border-radius:var(--radius-lg);padding:26px 24px;color:var(--color-text);display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow-md)" style-hover="border-color:var(--color-accent-600);background:color-mix(in srgb, var(--color-accent) 10%, var(--color-surface))">
@@ -977,7 +986,7 @@ p{letter-spacing:.005em}
           <span style="flex:none;font:italic 700 clamp(11px,.62vw,14px)/1 var(--font-heading);letter-spacing:.16em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 40%,transparent)">or type</span>
           <span style="min-width:0;font-family:var(--font-heading);font-size:clamp(17px,1.15vw,26px);font-weight:800;letter-spacing:.005em;color:var(--color-accent-200);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ joinLine }}</span>
         </div>
-        <div style="font-size:clamp(14px,1.2vw,19px);color:color-mix(in srgb,var(--color-text) 55%,transparent);max-width:34ch;text-wrap:pretty">Twelve drives · play sheet drawn at random at kickoff. Nothing you tap on your phone shows up here.</div>
+        <div style="font-size:clamp(14px,1.2vw,19px);color:color-mix(in srgb,var(--color-text) 55%,transparent);max-width:34ch;text-wrap:pretty">Twelve questions decide the draft order · winner takes first pick. Play sheet drawn at random at kickoff — nothing you tap on your phone shows up here.</div>
         <div style="display:flex;gap:12px;flex-wrap:wrap">
           <sc-if value="{{ tvStartLocked }}" hint-placeholder-val="{{ false }}">
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -1031,6 +1040,7 @@ p{letter-spacing:.005em}
       <div class="lofg-intro-card">
         <div class="lofg-intro-title"><span class="tab"></span><h1>Draft Order Challenge</h1></div>
         <div class="lofg-intro-stakes">{{ introStakes }}</div>
+        <div class="lofg-intro-stakes2">{{ introStakes2 }}</div>
         <sc-if value="{{ hasChampion }}" hint-placeholder-val="{{ true }}">
         <div class="lofg-intro-champ">
           <span class="tab"></span>
@@ -1038,7 +1048,6 @@ p{letter-spacing:.005em}
           <span class="lofg-intro-champ-name">{{ introChampion }}</span>
         </div>
         </sc-if>
-        <span class="onair lofg-intro-onair"><span class="onair-dot"></span>On air</span>
       </div>
       <div class="lofg-intro-wipe-lead"></div>
       <div class="lofg-intro-wipe"></div>
@@ -1224,7 +1233,7 @@ const SEASON_LABEL = "2026 fantasy football draft";
 // The game is cut in *under* the wipe, at the moment it covers the screen —
 // that is the wipe's delay (9.4s) plus 55% of its 1.05s run, which is where
 // the lofgWipe keyframe reaches translateX(0). A test pins this arithmetic.
-const INTRO_MS = 9980;
+const INTRO_MS = 14180;
 const INTRO_REDUCED_MS = 900;
 // Is this plausibly the TV rather than somebody's phone? Only used to decide
 // whether the ambient backdrop is worth 2.3MB on this device.
@@ -1504,7 +1513,7 @@ class Component extends DCLogic {
     });
   }
 
-  componentWillUnmount() { this.stopClock(); this.clearDemo(); this.unwatchMedia(); if (this.ch) this.ch.unsubscribe(); }
+  componentWillUnmount() { this.stopClock(); this.clearDemo(); this.stopIntroVo(); this.unwatchMedia(); if (this.ch) this.ch.unsubscribe(); }
 
   // ---- realtime ----
   openChannel(code, role) {
@@ -1533,8 +1542,38 @@ class Component extends DCLogic {
   goHome = () => { this.stopClock(); this.clearDemo(); if (this.pingTimer) { clearInterval(this.pingTimer); this.pingTimer = null; } this.answeredFor = null; if (this.ch) { this.ch.unsubscribe(); this.ch = null; } this.setState({ screen: "home", phase: "lobby", players: [], answers: {}, questions: [], qIndex: 0, revealCount: 0, snap: null, commishId: "" }); };
   goPool = () => this.setState({ screen: "pool" });
   goJoin = () => this.setState({ screen: "join" });
+  // ---- the kickoff voice-over ----
+  // Built here rather than at kickoff so it is fetched while the room fills
+  // up: 118KB is small, but a hotspot is a hotspot and the read has to start
+  // the instant the sequence does. goHost only runs on the TV, so the eleven
+  // phones never touch it — same rule as the plate.
+  armIntroVo() {
+    if (prefersReducedMotion()) return;   // see playIntroVo for why
+    try {
+      this.introVo = new Audio("kickoff-vo.mp3");
+      this.introVo.preload = "auto";
+      this.introVo.load();
+    } catch (e) { this.introVo = null; }
+  }
+  playIntroVo() {
+    // Not gated on reduced motion because sound is not motion — gated because
+    // that path collapses the intro to INTRO_REDUCED_MS (900ms) and a 13.5s
+    // read would then talk straight over the first question.
+    if (prefersReducedMotion() || !this.introVo) return;
+    // A refused autoplay is not an error worth surfacing: the commissioner
+    // clicked Kick off, so the gesture is there, but policy is policy and the
+    // cold open has to work silently regardless.
+    try { this.introVo.currentTime = 0; const r = this.introVo.play(); if (r && r.catch) r.catch(() => {}); }
+    catch (e) {}
+  }
+  stopIntroVo() {
+    if (!this.introVo) return;
+    try { this.introVo.pause(); this.introVo.currentTime = 0; } catch (e) {}
+  }
+
   goHost = () => {
     const code = Array.from({ length: 4 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ"[Math.floor(Math.random() * 24)]).join("");
+    this.armIntroVo();
     this.setState({ screen: "host", code, phase: "lobby", players: [], answers: {}, questions: [], qIndex: 0, revealCount: 0, commishId: "" }, () => this.openChannel(code, "host"));
   };
 
@@ -1614,6 +1653,7 @@ class Component extends DCLogic {
     const wait = prefersReducedMotion() ? INTRO_REDUCED_MS : INTRO_MS;
     this.setState({ questions: this.drawQuestions(), qIndex: 0, answers: {}, phase: "intro" }, () => {
       this.broadcast();
+      this.playIntroVo();
       this.introTimer = setTimeout(() => { this.introTimer = null; this.beginQuestion(0); }, wait);
     });
   }
@@ -1622,6 +1662,9 @@ class Component extends DCLogic {
   skipIntro = () => {
     if (this.state.phase !== "intro") return;
     if (this.introTimer) { clearTimeout(this.introTimer); this.introTimer = null; }
+    // Without this the read carries on over the first question, which is
+    // worse than never having had a voice-over at all.
+    this.stopIntroVo();
     this.beginQuestion(0);
   };
   // The TV's own button. Once someone holds the remote the TV is a display,
@@ -1777,7 +1820,7 @@ class Component extends DCLogic {
     x.fillStyle = cText; x.font = "800 104px " + HEAD;
     x.fillText("DRAFT ORDER", 72, 224);
     x.fillStyle = cN600; x.font = "400 24px " + MONO;
-    x.fillText("Decided by twelve questions of football trivia", 72, 268);
+    x.fillText("Twelve questions decided the draft order \u00b7 winner takes first pick", 72, 268);
     let y = 340;
     order.forEach((p, k) => {
       x.save();
@@ -1927,7 +1970,8 @@ class Component extends DCLogic {
         v.introRoster = st.players.map((p, i) => ({
           name: p.name, delay: (1.2 + i * 0.14).toFixed(2) + "s"
         }));
-        v.introStakes = st.players.length + " in \u00b7 12 drives \u00b7 winner picks first";
+        v.introStakes = st.players.length + " in \u00b7 twelve questions decide the draft order";
+        v.introStakes2 = "Winner takes first pick";
         v.introSeason = SEASON_LABEL;
         v.hasChampion = !!DEFENDING_CHAMPION;
         v.introChampion = DEFENDING_CHAMPION;
