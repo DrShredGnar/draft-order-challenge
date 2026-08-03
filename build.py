@@ -26,6 +26,7 @@ OUT = ROOT / "index.html"
 
 TAG_SEP = "\n\n  "
 PLACEHOLDER = "{{__BUNDLER_TAGS__}}"
+LEAGUE_MARKER = "{{__LEAGUE_POOL__}}"
 
 
 def gz(data: bytes) -> bytes:
@@ -41,6 +42,54 @@ def js_json(obj) -> str:
     data tag early and the page would break in a way no test would catch.
     """
     return json.dumps(obj, ensure_ascii=False).replace("</", "<\\u002F")
+
+
+def league_pool() -> str:
+    """The sealed base64 pool of league-history questions, for the template.
+
+    Generated outside this repo by shreddy_draft/scripts/gen_league_questions.py,
+    which is where the draft and scoring history lives. Absent that file the
+    build still succeeds with an empty seal: the game degrades to three general
+    questions per tier, which is how it shipped before the house questions
+    existed. A build that silently produced a *broken* seal would be worse than
+    one that produced none, so the shape is checked rather than assumed.
+    """
+    path = SRC / "league_pool.json"
+    if not path.exists():
+        print("note: src/league_pool.json missing — building with no league "
+              "questions (run gen_league_questions.py to add them)")
+        return ""
+    data = json.loads(path.read_text())
+    sealed = data.get("sealed", "")
+    if not isinstance(sealed, str) or not sealed:
+        sys.exit("src/league_pool.json has no 'sealed' payload")
+    try:
+        decoded = json.loads(base64.b64decode(sealed).decode("utf-8"))
+    except Exception as e:
+        sys.exit("src/league_pool.json seal does not decode: %s" % e)
+    missing = [t for t in ("easy", "medium", "hard", "brutal") if not decoded.get(t)]
+    if missing:
+        sys.exit("league pool has no questions for tier(s): %s" % ", ".join(missing))
+    if '"' in sealed or "\\" in sealed:
+        # It is interpolated into a JS double-quoted string literal. Base64's
+        # alphabet contains neither, so this can only mean the payload is not
+        # what it claims to be.
+        sys.exit("league pool seal is not clean base64")
+    return sealed
+
+
+def rendered_template() -> str:
+    """src/template.html with the league pool substituted in.
+
+    The pool is injected at build time rather than written into template.html
+    so that the authored file stays authored: a generated 32KB base64 line
+    committed into the middle of the app source would make every regeneration
+    look like a source change in review.
+    """
+    text = (SRC / "template.html").read_text()
+    if LEAGUE_MARKER not in text:
+        sys.exit("src/template.html has lost its %s marker" % LEAGUE_MARKER)
+    return text.replace(LEAGUE_MARKER, league_pool())
 
 
 def build() -> str:
@@ -62,7 +111,7 @@ def build() -> str:
         ('manifest', js_json(manifest)),
         ('ext_resources', (SRC / "ext_resources.json").read_text().strip()),
         ('page_order', (SRC / "page_order.json").read_text().strip()),
-        ('template', js_json((SRC / "template.html").read_text())),
+        ('template', js_json(rendered_template())),
     ]
     # Each body sits on its own line, indented to match the surrounding shell.
     tags = [(name, "\n" + body + "\n  ") for name, body in tags]

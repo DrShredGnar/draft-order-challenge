@@ -814,13 +814,13 @@ p{letter-spacing:.005em}
     </div>
     <button sc-camel-on-click="{{ goHome }}" class="btn btn-primary" style="cursor:pointer">Back</button>
   </div>
-  <p style="margin:0;max-width:58ch;font-size:15px;color:color-mix(in srgb,var(--color-text) 62%,transparent);text-wrap:pretty">At kickoff the app draws three questions per tier at random and shuffles the four options on each. The draw happens on the host device the moment the game starts, so the commissioner is playing the same unseen set as the other eleven.</p>
+  <p style="margin:0;max-width:58ch;font-size:15px;color:color-mix(in srgb,var(--color-text) 62%,transparent);text-wrap:pretty">At kickoff the app draws three questions per tier at random and shuffles the four options on each. One of every three comes from this league's own history — the 2024 and 2025 drafts, both title games, every weekly score. The draw happens on the host device the moment the game starts, so the commissioner is playing the same unseen set as the other eleven.</p>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px">
     <sc-for list="{{ poolRows }}" as="t" hint-placeholder-count="4">
       <div style="background:var(--color-surface);border:1px solid var(--color-line);border-radius:var(--radius-lg);padding:18px;display:flex;flex-direction:column;gap:6px">
         <span style="font:italic 700 14px/1 var(--font-heading);letter-spacing:.16em;text-transform:uppercase;color:{{ t.fg }}">{{ t.label }}</span>
         <span style="font-family:var(--font-heading);font-size:49px;font-weight:800;letter-spacing:.005em;font-variant-numeric:tabular-nums">{{ t.count }}</span>
-        <span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 50%,transparent)">in pool · 3 drawn · {{ t.points }}pt each</span>
+        <span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 50%,transparent)">in pool · {{ t.house }} from league history · 3 drawn · {{ t.points }}pt each</span>
       </div>
     </sc-for>
   </div>
@@ -1208,6 +1208,10 @@ p{letter-spacing:.005em}
 const SB_URL = "https://qbzsinhlzuxdjvwfurxe.supabase.co";
 const SB_KEY = "sb_publishable_qMEuvB-ugPpbf26vZYCrhg_-AY6hull";
 const QUESTION_SECONDS = 30;
+const QUESTIONS_PER_TIER = 3;
+// How many of each tier's three come from the league's own history. A floor,
+// not a quota — see drawQuestions.
+const LEAGUE_QUOTA = 1;
 // ── The two lines to edit each August ────────────────────────────────────
 // Who is defending, and what season this is. Both are typography, not part
 // of the kickoff video: generative video renders lettering as garbage, and a
@@ -1375,6 +1379,40 @@ const POOL = {
     ["Which team selected Micah Parsons in the 2021 draft?", "Dallas Cowboys", ["Philadelphia Eagles", "New York Giants", "Washington"]]
   ]
 };
+
+// ── The house questions ──────────────────────────────────────────────────
+// The league's own history — every pick of the 2024 and 2025 drafts, both
+// title games, and the full weekly scoring table — turned into questions by
+// shreddy_draft/scripts/gen_league_questions.py and inlined here by build.py
+// at the marker below. Same [text, correct, [wrong x3]] shape as POOL.
+//
+// It arrives base64 rather than as readable JSON, and the reason is the
+// commissioner, not the players. He is the one who runs the generator and
+// reviews the diff, so a plaintext pool would spoil itself on the way to
+// being committed. It is worth nothing against anyone else — this ships
+// inside a public index.html and POOL above has always been readable — so do
+// not mistake it for a secret. The seal on this game is social.
+//
+// Decoded lazily and cached: ~32KB of base64 that only the host device ever
+// needs, and only once, at kickoff.
+const LEAGUE_POOL_SEALED = "{{__LEAGUE_POOL__}}";
+let _leaguePool = null;
+function leaguePool() {
+  if (_leaguePool) return _leaguePool;
+  try {
+    const bin = atob(LEAGUE_POOL_SEALED);
+    const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+    // Manager and player names carry apostrophes and accents, so the payload
+    // is UTF-8 and atob alone would mangle it into latin1.
+    _leaguePool = JSON.parse(new TextDecoder().decode(bytes));
+  } catch (e) {
+    // A broken seal must not take the party down with it. An empty pool means
+    // drawQuestions falls back to three general questions per tier, which is
+    // exactly the game as it shipped before this existed.
+    _leaguePool = { easy: [], medium: [], hard: [], brutal: [] };
+  }
+  return _leaguePool;
+}
 const DEMO_NAMES = ["Marcus", "Dave", "Sully", "Big Rich", "Theo", "Nate", "Cam", "Petey", "Wes", "Hollis", "Gunner"];
 
 // A player's id used to be "p_" + their typed name, which meant the id was
@@ -1595,10 +1633,25 @@ class Component extends DCLogic {
     if (c === "next" && this.state.phase === "results") this.nextQuestion();
   }
   sendCmd = (c) => this.send({ t: "cmd", id: this.state.myId, c });
+  // Three per tier, twelve in all. One of each tier's three is drawn from the
+  // league's own history rather than the general pool — guaranteed, not left
+  // to a blind draw across a combined pool, because the house questions are
+  // the reason anyone is looking at the TV and a night that happened to draw
+  // zero of them would be the old game with extra steps.
+  //
+  // LEAGUE_QUOTA is a floor, not a fixed count: if a tier's house pool is
+  // short (or the seal failed to decode), the shortfall is made up from the
+  // general pool and the tier still yields three.
   drawQuestions() {
     const out = [];
+    const house = leaguePool();
     TIERS.forEach((t) => {
-      shuffle(POOL[t.key]).slice(0, 3).forEach(([text, correct, wrong]) => {
+      const mine = shuffle(house[t.key] || []).slice(0, LEAGUE_QUOTA);
+      const rest = shuffle(POOL[t.key]).slice(0, QUESTIONS_PER_TIER - mine.length);
+      // Interleaved before the tier is played so the house question is not
+      // always the same beat in the round; the tier order itself is fixed
+      // because the points ramp is the shape of the game.
+      shuffle(mine.concat(rest)).forEach(([text, correct, wrong]) => {
         const opts = shuffle([correct].concat(wrong));
         out.push({ tier: t.key, text, options: opts, correct: opts.indexOf(correct) });
       });
@@ -1824,7 +1877,11 @@ class Component extends DCLogic {
       quickKicker: st.scanned ? "Scanned in" : "Welcome back",
       quickLabel: `Join ${st.joinCode} as ${st.joinName.trim()}`,
       quickJoin: this.submitJoin,
-      poolRows: TIERS.map((t) => ({ label: t.label, fg: t.fg, points: t.points, count: POOL[t.key].length }))
+      poolRows: TIERS.map((t) => {
+        const house = (leaguePool()[t.key] || []).length;
+        return { label: t.label, fg: t.fg, points: t.points,
+                 count: POOL[t.key].length + house, house };
+      })
     };
 
     if (sc === "player") {
