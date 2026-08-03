@@ -760,9 +760,17 @@ h1,h2,h3,h4,h5,h6{
    opens the host screen on a handset sees a usable game rather than a broken
    one. */
 @media (max-width:760px){
+  /* !important is load-bearing here, not decoration. The wrapper carries
+     `height:var(--app-h);overflow:hidden` as an INLINE style, and an inline
+     declaration beats a stylesheet rule regardless of selector specificity —
+     so the first version of this block was silently ignored in full. The
+     container stayed exactly one viewport tall with overflow hidden, which
+     rendered ~590px of lobby that no gesture could reach: the roster count
+     was cut mid-glyph and nothing scrolled. */
   .lofg-host{
-    height:auto;min-height:var(--app-h);
-    overflow-y:auto;overflow-x:hidden;
+    height:auto !important;
+    min-height:var(--app-h);
+    overflow:visible !important;
     -webkit-overflow-scrolling:touch;
   }
   /* Every host layout collapses to a single column.
