@@ -738,6 +738,62 @@ h1,h2,h3,h4,h5,h6{
    in beginGame() shortens to match, so the game does not sit waiting on
    animations that are not running. This block also stops the ON AIR pulse --
    "reduce" means reduce, signature or not. */
+/* ── THE HOST SCREEN ON A SMALL SCREEN ─────────────────────────────────────
+   The host view is built for a television: one viewport tall, nothing
+   scrolls, two columns side by side. Opened on a phone it did not shrink, it
+   CLIPPED — `overflow:hidden` on a layout wider than the screen swallowed the
+   play clock, the whole roster column, and two of the four answer cards.
+   Nothing scrolled, so there was no way to reach them; the content simply was
+   not there. Verified on an iPhone 16 Pro viewport (402px): the lobby's right
+   column ran to x=542 and answer cards B and D to x=517.
+
+   Two separate causes, both fixed above: an explicit `minmax(320px,…)` floor
+   on the lobby, and — less obvious — plain `1fr` tracks on the answer grid.
+   A grid item's automatic minimum is its MIN-CONTENT width, so a single long
+   unbreakable answer (the league-history questions answer with usernames like
+   "zachwest88") widened the track past its share. `minmax(0,1fr)` is what
+   actually lets a track shrink.
+
+   Below 760px the whole thing becomes one column that scrolls. This is a
+   fallback, not a second design — the TV is still the intended surface, and
+   the phones have their own player view. It exists so that a commissioner who
+   opens the host screen on a handset sees a usable game rather than a broken
+   one. */
+@media (max-width:760px){
+  .lofg-host{
+    height:auto;min-height:var(--app-h);
+    overflow-y:auto;overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;
+  }
+  /* Every host layout collapses to a single column.
+     `overflow:visible` and `flex:none` matter as much as the column count:
+     each of these panes was sized to share one TV viewport (`flex:1`,
+     `min-height:0`, `overflow:hidden`) and would otherwise keep clipping
+     vertically in a scrolling column — the first fix stopped the roster
+     running off the RIGHT edge and left it running off the BOTTOM. */
+  .lofg-host-lobby,.lofg-host-answers,.lofg-host-reveal{
+    grid-template-columns:minmax(0,1fr) !important;
+    align-items:start !important;
+    overflow:visible !important;
+    min-height:auto !important;
+    flex:none !important;
+  }
+  /* The four answer cards stop being a 2x2 and become a stack, so each one
+     gets the full width its text needs. */
+  /* The status row (tier + drive | cards in + play clock) had no flex-wrap,
+     so on a phone the play clock ran 53px off the right edge and `0:28` read
+     as `0:2` with "PLAY CLO" chopped — exactly what the iPhone screenshots
+     showed. It wraps now, and the clock group spans the new line rather than
+     hanging off one side. */
+  .lofg-host-statusrow{ gap:10px !important; }
+  .lofg-host-clockgroup{ width:100%; justify-content:flex-start; }
+  .lofg-host-answers{ grid-template-rows:none !important; }
+  .lofg-host-answers > *{ min-height:76px; }
+  .lofg-host-lobby > *,.lofg-host-reveal > *{
+    overflow:visible !important; min-height:auto !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce){
   .lofg-intro,.lofg-intro *{animation-duration:.01ms !important;animation-delay:0ms !important;animation-iteration-count:1 !important}
   .lofg-intro{animation:none !important}
@@ -952,7 +1008,7 @@ p{letter-spacing:.005em}
 </sc-if>
 
 <sc-if value="{{ isHost }}">
-<div style="height:100vh;overflow:hidden;display:flex;flex-direction:column;padding:clamp(14px,2.2vw,36px);gap:clamp(10px,1.6vh,22px)">
+<div class="lofg-host" style="height:var(--app-h);overflow:hidden;display:flex;flex-direction:column;padding:max(clamp(14px,2.2vw,36px),env(safe-area-inset-top)) max(clamp(14px,2.2vw,36px),env(safe-area-inset-right)) max(clamp(14px,2.2vw,36px),env(safe-area-inset-bottom)) max(clamp(14px,2.2vw,36px),env(safe-area-inset-left));gap:clamp(10px,1.6vh,22px);box-sizing:border-box">
   <div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap">
     <div style="display:flex;align-items:center;gap:13px">
       <span style="width:32px;height:1px;background:linear-gradient(90deg,transparent,var(--color-accent))"></span>
@@ -965,7 +1021,7 @@ p{letter-spacing:.005em}
   </div>
 
   <sc-if value="{{ hLobby }}">
-    <div style="flex:1;min-height:0;overflow:hidden;display:grid;grid-template-columns:minmax(320px,1.25fr) .95fr;gap:clamp(18px,2.6vw,44px);align-items:center">
+    <div class="lofg-host-lobby" style="flex:1;min-height:0;overflow:hidden;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.95fr);gap:clamp(18px,2.6vw,44px);align-items:center">
       <div style="display:flex;flex-direction:column;gap:14px">
         <div style="font:italic 700 clamp(15px,1vw,19px)/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 50%,transparent)">Check in at this huddle code</div>
         <div style="display:flex;align-items:stretch;gap:clamp(10px,1.2vw,16px)">
@@ -1056,18 +1112,18 @@ p{letter-spacing:.005em}
 
   <sc-if value="{{ hQuestion }}">
     <div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:clamp(8px,1.4vh,20px)">
-      <div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:20px">
+      <div class="lofg-host-statusrow" style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
           <span style="white-space:nowrap;font:italic 700 clamp(15px,1vw,20px)/1 var(--font-heading);letter-spacing:.16em;text-transform:uppercase;padding:8px 13px;border-radius:var(--radius-sm);border:1px solid {{ tierFg }};color:{{ tierFg }}">{{ tierLabel }} · {{ tierPoints }} pt</span>
           <span style="white-space:nowrap;font:italic 700 clamp(15px,1vw,20px)/1 var(--font-heading);letter-spacing:.16em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 42%,transparent)">Drive {{ qNum }} of 12 · {{ downLabel }}</span>
         </div>
-        <div style="display:flex;align-items:stretch;gap:clamp(10px,1.4vw,20px)">
+        <div class="lofg-host-clockgroup" style="display:flex;align-items:stretch;gap:clamp(10px,1.4vw,20px)">
           <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;padding:clamp(8px,1vh,14px) clamp(12px,1.4vw,20px);border-radius:var(--radius-sm);background:var(--color-bg);border:1px solid var(--color-line);box-shadow:inset 0 1px 0 color-mix(in srgb, var(--color-text) 5%, transparent)">
             <div style="font-family:var(--font-heading);font-size:clamp(31px,2.8vw,57px);font-weight:800;letter-spacing:.005em;font-variant-numeric:tabular-nums;color:var(--color-accent-200)">{{ answeredLabel }}</div>
             <div style="font:italic 700 clamp(12px,.75vw,15px)/1 var(--font-heading);letter-spacing:.18em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 40%,transparent)">cards in</div>
           </div>
           <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;padding:clamp(6px,.8vh,12px) clamp(16px,2vw,30px);border-radius:var(--radius-sm);background:var(--color-bg);border:1px solid {{ clockBorder }};box-shadow:inset 0 2px 10px rgba(0,0,0,.6), 0 0 34px {{ clockGlow }}">
-            <div style="font-family:var(--font-heading);font-size:clamp(60px,6.6vw,140px);font-weight:800;line-height:.92;letter-spacing:.01em;font-variant-numeric:tabular-nums;color:{{ clockColor }};text-shadow:0 0 22px {{ clockGlow }};animation:{{ clockAnim }}">{{ clock }}</div>
+            <div style="font-family:var(--font-heading);font-size:clamp(44px,6.6vw,140px);font-weight:800;line-height:.92;letter-spacing:.01em;font-variant-numeric:tabular-nums;color:{{ clockColor }};text-shadow:0 0 22px {{ clockGlow }};animation:{{ clockAnim }}">{{ clock }}</div>
             <div style="font:italic 700 clamp(12px,.75vw,15px)/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 38%,transparent)">play clock</div>
           </div>
         </div>
@@ -1104,7 +1160,7 @@ p{letter-spacing:.005em}
         </div>
       </div>
       <div style="flex:none;font-family:var(--font-heading);font-size:clamp(30px,3.6vw,74px);font-weight:700;line-height:1.02;letter-spacing:.005em;text-wrap:pretty;max-width:30ch">{{ qText }}</div>
-      <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(2,minmax(0,1fr));gap:clamp(8px,1.2vw,16px)">
+      <div class="lofg-host-answers" style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:repeat(2,minmax(0,1fr));gap:clamp(8px,1.2vw,16px)">
         <sc-for list="{{ hOptions }}" as="o" hint-placeholder-count="4">
           <div style="text-align:left;width:100%;color:var(--color-text);display:flex;align-items:center;gap:14px;padding:clamp(12px,1.4vw,22px) clamp(16px,1.8vw,26px);border-radius:var(--radius-md);background:var(--color-surface);border:1px solid var(--color-line);border-left:4px solid #2b3d59;box-sizing:border-box">
             <span style="flex:none;width:clamp(46px,4.6vw,76px);height:clamp(46px,4.6vw,76px);border-radius:var(--radius-sm);display:grid;place-items:center;background:var(--color-accent-900);color:var(--color-accent-200);font-family:var(--font-heading);font-weight:800;font-size:clamp(26px,2.3vw,46px);box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--color-text) 14%, transparent)">{{ o.letter }}</span>
@@ -1125,7 +1181,7 @@ p{letter-spacing:.005em}
   </sc-if>
 
   <sc-if value="{{ hResults }}">
-    <div style="flex:1;min-height:0;display:grid;grid-template-columns:1.05fr .95fr;grid-template-rows:minmax(0,1fr);gap:clamp(18px,2.6vw,40px)">
+    <div class="lofg-host-reveal" style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);grid-template-rows:minmax(0,1fr);gap:clamp(18px,2.6vw,40px)">
       <div style="min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:clamp(6px,1vh,14px)">
         <div style="font:italic 700 clamp(15px,1vw,19px)/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 45%,transparent)">Drive {{ qNum }} · the call was</div>
         <div style="font-family:var(--font-heading);font-size:clamp(34px,3.4vw,66px);font-weight:800;text-transform:uppercase;line-height:1;letter-spacing:.01em;color:var(--color-accent-300);text-wrap:pretty">{{ correctText }}</div>
