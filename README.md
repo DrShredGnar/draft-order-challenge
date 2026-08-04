@@ -34,6 +34,8 @@ src/league_pool.json    GENERATED, sealed — the league's own questions
 build.py                src/ -> index.html
 unpack.py               index.html -> src/   (recovery only; already done)
 kickoff-plate.mp4       cold-open background clip; NOT bundled (see above)
+kickoff-vo.mp3          Sterling reads the cold open; sibling file, TV only
+reveal-vo.mp3           Sterling reads the close over the held draft board
 ```
 
 `src/template.html` is one file in four parts:
@@ -113,6 +115,8 @@ fine under `http.server`.
 
 ```sh
 node test/qr.test.js        # QR encoder conformance
+node test/draw.test.js      # the kickoff draw and the house-question floor
+node test/reveal.test.js    # the reveal read's cue, against a virtual clock
 ```
 
 The QR encoder is hand-rolled (`src/vendor/qr.js`) and shipped broken for
@@ -132,10 +136,32 @@ against the 32 legal codewords, or decode the rendered canvas with Chrome's
 `BarcodeDetector` alongside a known-good control image.
 
 After changing `index.html`, copy it to the war room repo at
-`league/index.html` so `/challenge` serves the same build. Copy
-`kickoff-plate.mp4` across too if it changed — the war room serves it from its
-own route, because `/challenge` has no trailing slash and the page's relative
-`src` therefore resolves to the site root.
+`league/index.html` so `/challenge` serves the same build. Copy any sibling
+asset that changed across too — `kickoff-plate.mp4`, `kickoff-vo.mp3`,
+`reveal-vo.mp3` — **and give each one a route in the war room's `server.py`**.
+`/challenge` has no trailing slash, so the page's relative `src` resolves to the
+site root and an un-routed sibling 404s there while working perfectly on Pages.
+That is not hypothetical: `kickoff-vo.mp3` shipped without a route and the LAN
+fallback ran a silent cold open for a day. A war-room test now derives the list
+of referenced siblings from the bundle and fails if any of them is unrouted.
+
+## The reveal read
+
+The board goes up when the last question is scored and holds while Sterling
+reads the close (`reveal-vo.mp3`). The ticker is *cued* rather than started
+after him: `REVEAL_VO_CUE_MS` is measured off the file — 12.34s, where the
+closing "Worst to first" begins — so pick twelve lands under those two words
+and the reveal never has a silent hole in it. Clicking the board during the
+hold cuts the read and starts the order, the same escape hatch the cold open
+has.
+
+Re-cutting the read means **re-measuring that number**, not nudging it. Two
+tests hold the halves apart: `test/reveal.test.js` drives the shipped reveal
+against a virtual clock (pick twelve on the cue, one step between the rest,
+no timer left running), and the war room's `test_challenge_reveal_read.py`
+reads the duration out of the mp3 and fails if the cue no longer lands inside
+it. Both failure modes are invisible in a diff and inaudible until draft
+night.
 
 ## Design
 

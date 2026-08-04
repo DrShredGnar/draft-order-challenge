@@ -1240,7 +1240,7 @@ p{letter-spacing:.005em}
   </sc-if>
 
   <sc-if value="{{ hReveal }}">
-    <div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:clamp(10px,1.8vh,24px)">
+    <div sc-camel-on-click="{{ skipRevealHold }}" style="flex:1;min-height:0;display:flex;flex-direction:column;gap:clamp(10px,1.8vh,24px)">
       <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap">
         <div>
           <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:var(--radius-sm);background:var(--color-accent-900);border:1px solid var(--color-accent-700);margin-bottom:10px">
@@ -1303,6 +1303,22 @@ const SEASON_LABEL = "2026 fantasy football draft";
 // the lofgWipe keyframe reaches translateX(0). A test pins this arithmetic.
 const INTRO_MS = 14180;
 const INTRO_REDUCED_MS = 900;
+// ── The reveal read ───────────────────────────────────────────────────────
+// One pick every REVEAL_STEP_MS, worst to first. Before any of it moves, the
+// board holds on "The board is set." while Sterling reads the close.
+//
+// REVEAL_VO_CUE_MS is measured off the shipped file, not chosen: reveal-vo.mp3
+// runs 13.46s and its closing line ("Worst to first") starts at 12.34s, so
+// cueing the ticker there drops pick twelve UNDER those two words instead of
+// after them. The reveal then never has a silent gap in it — the read hands
+// off to the board mid-sentence, which is how a broadcast does it.
+//
+// Re-cut the read and this number has to be re-measured, not nudged. A war-room
+// test reads the duration out of the mp3 and fails if the cue no longer lands
+// inside it, because a cue past the end is exactly the silent hole this exists
+// to avoid, and it is inaudible in code review.
+const REVEAL_STEP_MS = 2600;
+const REVEAL_VO_CUE_MS = 12340;
 // Is this plausibly the TV rather than somebody's phone? Only used to decide
 // whether the ambient backdrop is worth 2.3MB on this device.
 // 1000px, not 900: an iPhone 15 Pro Max in landscape is 932px wide and would
@@ -1615,7 +1631,7 @@ class Component extends DCLogic {
     });
   }
 
-  componentWillUnmount() { this.stopClock(); this.clearDemo(); this.stopIntroVo(); this.unwatchMedia(); if (this.ch) this.ch.unsubscribe(); }
+  componentWillUnmount() { this.stopClock(); this.clearDemo(); this.stopIntroVo(); this.stopRevealVo(); this.unwatchMedia(); if (this.ch) this.ch.unsubscribe(); }
 
   // ---- realtime ----
   openChannel(code, role) {
@@ -1641,7 +1657,7 @@ class Component extends DCLogic {
   }
 
   // ---- navigation ----
-  goHome = () => { this.stopClock(); this.clearDemo(); if (this.pingTimer) { clearInterval(this.pingTimer); this.pingTimer = null; } this.answeredFor = null; if (this.ch) { this.ch.unsubscribe(); this.ch = null; } this.setState({ screen: "home", phase: "lobby", players: [], answers: {}, questions: [], qIndex: 0, revealCount: 0, snap: null, commishId: "" }); };
+  goHome = () => { this.stopClock(); this.clearDemo(); this.stopIntroVo(); this.stopRevealVo(); if (this.pingTimer) { clearInterval(this.pingTimer); this.pingTimer = null; } this.answeredFor = null; if (this.ch) { this.ch.unsubscribe(); this.ch = null; } this.setState({ screen: "home", phase: "lobby", players: [], answers: {}, questions: [], qIndex: 0, revealCount: 0, snap: null, commishId: "" }); };
   goPool = () => this.setState({ screen: "pool" });
   goJoin = () => this.setState({ screen: "join" });
   // ---- the kickoff voice-over ----
@@ -1672,10 +1688,35 @@ class Component extends DCLogic {
     if (!this.introVo) return;
     try { this.introVo.pause(); this.introVo.currentTime = 0; } catch (e) {}
   }
+  // ---- the reveal read ----
+  // Same rules as the kickoff read: armed here so it is fetched while the room
+  // fills up, and only ever on the TV. One deliberate difference — this one is
+  // NOT gated on prefers-reduced-motion. The kickoff read is gated because that
+  // path collapses the cold open to 900ms and a 13.5s read would then talk over
+  // question one. Nothing about the reveal collapses: the ticker runs at the
+  // same REVEAL_STEP_MS either way, so there is no overrun to avoid, and no
+  // reason to take the close away from someone who asked for less motion.
+  armRevealVo() {
+    try {
+      this.revealVo = new Audio("reveal-vo.mp3");
+      this.revealVo.preload = "auto";
+      this.revealVo.load();
+    } catch (e) { this.revealVo = null; }
+  }
+  playRevealVo() {
+    if (!this.revealVo) return;
+    try { this.revealVo.currentTime = 0; const r = this.revealVo.play(); if (r && r.catch) r.catch(() => {}); }
+    catch (e) {}
+  }
+  stopRevealVo() {
+    if (!this.revealVo) return;
+    try { this.revealVo.pause(); this.revealVo.currentTime = 0; } catch (e) {}
+  }
 
   goHost = () => {
     const code = Array.from({ length: 4 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ"[Math.floor(Math.random() * 24)]).join("");
     this.armIntroVo();
+    this.armRevealVo();
     this.setState({ screen: "host", code, phase: "lobby", players: [], answers: {}, questions: [], qIndex: 0, revealCount: 0, commishId: "" }, () => this.openChannel(code, "host"));
   };
 
@@ -1820,6 +1861,7 @@ class Component extends DCLogic {
   stopClock() {
     if (this.tick) { clearInterval(this.tick); this.tick = null; }
     if (this.revealTimer) { clearInterval(this.revealTimer); this.revealTimer = null; }
+    if (this.revealHold) { clearTimeout(this.revealHold); this.revealHold = null; }
     if (this.introTimer) { clearTimeout(this.introTimer); this.introTimer = null; }
   }
 
@@ -1854,15 +1896,38 @@ class Component extends DCLogic {
     if (n >= this.state.questions.length) {
       this.setState({ phase: "reveal", revealCount: 0 }, () => {
         this.broadcast();
-        this.revealTimer = setInterval(() => {
-          const c = this.state.revealCount + 1;
-          this.setState({ revealCount: c }, this.broadcast);
-          if (c >= this.state.players.length) { clearInterval(this.revealTimer); this.revealTimer = null; }
-        }, 2600);
+        // The board goes up and holds while Sterling reads the close. The
+        // ticker is cued to his last line rather than started after it —
+        // see REVEAL_VO_CUE_MS.
+        this.playRevealVo();
+        this.revealHold = setTimeout(() => { this.revealHold = null; this.runReveal(); }, REVEAL_VO_CUE_MS);
       });
       return;
     }
     this.beginQuestion(n);
+  };
+  // Picks out from the bottom, one every REVEAL_STEP_MS. The first step fires
+  // immediately rather than one interval late: the whole point of the cue is
+  // that pick twelve lands on the read's closing words, and a setInterval that
+  // only pays out on its first tick would put it 2.6s past them.
+  runReveal() {
+    const step = () => {
+      const total = this.state.players.length;
+      const c = Math.min(this.state.revealCount + 1, total);
+      this.setState({ revealCount: c }, this.broadcast);
+      if (c >= total && this.revealTimer) { clearInterval(this.revealTimer); this.revealTimer = null; }
+    };
+    step();
+    if (this.state.players.length > 1) this.revealTimer = setInterval(step, REVEAL_STEP_MS);
+  }
+  // Nobody has to sit through the read. Any click on the board during the hold
+  // cuts the voice-over and starts the order — the same escape hatch the cold
+  // open has, for the same reason.
+  skipRevealHold = () => {
+    if (this.state.phase !== "reveal" || !this.revealHold) return;
+    clearTimeout(this.revealHold); this.revealHold = null;
+    this.stopRevealVo();
+    this.runReveal();
   };
 
   ranked() {
@@ -1971,8 +2036,18 @@ class Component extends DCLogic {
       // audience — a player who types the bare URL instead of scanning the QR
       // lands there — so it is gated on size. Every other screen (join,
       // player, pool) is a phone surface and never renders it.
+      //
+      // The reveal gets it too: the board holds still for the length of the
+      // read, and that is the one moment in the game with nothing moving on
+      // screen. This is the cut scene — a backdrop rather than a takeover. A
+      // clip playing OVER the board would hide the pulsing last-place row,
+      // which is the thing the read is pointing at. Free, in both senses: the
+      // TV already fetched this file for the cold open, and the eleven phones
+      // still never see it. The mask fades it out by two-thirds down, so the
+      // draft rows stay clean.
       showAmbient: !st.reduceMotion &&
-        ((sc === "host" && st.phase === "lobby") || (sc === "home" && st.tvSized)),
+        ((sc === "host" && (st.phase === "lobby" || st.phase === "reveal"))
+          || (sc === "home" && st.tvSized)),
       goHome: this.goHome, goPool: this.goPool, goJoin: this.goJoin, goHost: this.goHost,
       rtLabel: st.rt === "live" ? "connected to Supabase" : st.rt,
       joinCode: st.joinCode, joinName: st.joinName, onJoinCode: this.onJoinCode, onJoinName: this.onJoinName,
@@ -2198,6 +2273,9 @@ class Component extends DCLogic {
         v.revealFoot = revealed >= total ? "Ties broken by cumulative time on correct answers. Copy the order or download the card." : "One pick every few seconds, worst to first.";
         v.copyShare = this.copyShare; v.downloadCard = this.downloadCard;
         v.copyLabel = st.copied ? "Copied" : "Copy draft order";
+        // A no-op once the order is moving, so a click on Copy or Download at
+        // the end cannot be swallowed by the board's own handler.
+        v.skipRevealHold = this.skipRevealHold;
       }
       return v;
     }
