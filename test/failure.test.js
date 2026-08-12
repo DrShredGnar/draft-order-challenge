@@ -406,11 +406,153 @@ check('real joins respect the same cap the demo roster does', () => {
   assert(/t: "full"/.test(src), 'the thirteenth player is turned away without being told');
 });
 
-check('the lobby hint cannot count below zero', () => {
-  const src = lift(/v\.lobbyHint = [\s\S]*?;\n/, 'lobbyHint');
-  assert(!/12 - st\.players\.length/.test(src), 'lobbyHint still hardcodes 12 rather than MAX_PLAYERS');
-  assert(/Roster's full/.test(src), 'a full roster still renders a "N more can still join" line');
+check('the lobby cannot count below zero', () => {
+  // The count lives in rosterNote; lobbyHint owns only the remote. They used
+  // to both report it, in two different wordings, side by side.
+  const note = lift(/v\.rosterNote = [\s\S]*?;\n/, 'rosterNote');
+  const hint = lift(/v\.lobbyHint = [\s\S]*?;\n/, 'lobbyHint');
+  assert(!/12 - st\.players\.length/.test(note), 'rosterNote hardcodes 12 rather than MAX_PLAYERS');
+  assert(/Everybody is in/.test(note), 'a full roster has no "everybody is in" state');
+  // The subtraction must sit behind the short-roster branch, or a thirteenth
+  // player would render "-1 still to check in."
+  assert(/!tvShort \? "Everybody is in\."/.test(note),
+    'the remaining-players subtraction is not guarded by the short-roster check');
+  assert(!/still to check in|more can still join/.test(hint),
+    'lobbyHint is reporting the roster count again; rosterNote already does');
   assert(MAX_PLAYERS === 12, 'MAX_PLAYERS moved; check the draft grid still lays out');
+});
+
+check('the two lobby lines do not say the same thing', () => {
+  const note = lift(/v\.rosterNote = [\s\S]*?;\n/, 'rosterNote');
+  const hint = lift(/v\.lobbyHint = [\s\S]*?;\n/, 'lobbyHint');
+  assert(/remote/i.test(hint), 'lobbyHint no longer explains the remote, which is its only job');
+  assert(!/remote/i.test(note), 'rosterNote has taken on the remote as well as the count');
+});
+
+// ── the commissioner ────────────────────────────────────────────────────────
+console.log('\nwho gets the remote');
+
+const commishSrc = [
+  lift(/const COMMISSIONER_ALIASES = \[[^\]]*\];/, 'COMMISSIONER_ALIASES'),
+  lift(/^function normalName\(name\) \{[\s\S]*?\n\}$/m, 'normalName()'),
+  lift(/^function isCommissionerName\(name\) \{[\s\S]*?\n\}$/m, 'isCommissionerName()'),
+  lift(/const DEMO_NAMES = \[[^\]]*\];/, 'DEMO_NAMES'),
+].join('\n');
+const commish = new Function(commishSrc + 'return { isCommissionerName, normalName, DEMO_NAMES };')();
+
+check('the commissioner is recognised by the name he actually types', () => {
+  for (const n of ['Rich', 'rich', '  RICH  ', 'Richard', 'Rich V', 'Richard Vigil']) {
+    assert(commish.isCommissionerName(n), JSON.stringify(n) + ' does not pick up the remote');
+  }
+});
+
+// This is the whole reason the match is not a substring test. "Big Rich" is
+// in the demo roster, so `name.includes("Rich")` would hand the remote to a
+// bot and lock the real commissioner out of his own draft.
+check('a name that merely contains "Rich" does not take the remote', () => {
+  for (const n of ['Big Rich', 'Richie', 'Rich Uncle', 'Ricardo', 'Rick', 'Enrich', '', null]) {
+    assert(!commish.isCommissionerName(n), JSON.stringify(n) + ' wrongly picks up the remote');
+  }
+});
+
+check('no demo player can take the remote', () => {
+  const bad = commish.DEMO_NAMES.filter(commish.isCommissionerName);
+  assert(bad.length === 0, 'demo names that would steal the remote: ' + JSON.stringify(bad));
+});
+
+// Run the shipped hostJoin against stubs, rather than asserting on its text.
+// Source checks would pass on a version that computed the right thing and
+// never stored it.
+const hostJoinSrc = lift(/^  hostJoin\(id, name\) \{[\s\S]*?\n  \}$/m, 'hostJoin()')
+  .replace(/^  hostJoin\(id, name\)/, 'function hostJoin(id, name)');
+const hostJoin = new Function(commishSrc + 'const MAX_PLAYERS = 12;\n' + hostJoinSrc + 'return hostJoin;')();
+
+function room(players, commishId) {
+  const self = {
+    state: { players: players.slice(), commishId: commishId || '' },
+    setState(patch) { Object.assign(self.state, typeof patch === 'function' ? patch(self.state) : patch); },
+    broadcast() {},
+    send() {}
+  };
+  return self;
+}
+const P = (name, id) => ({ id: id || ('id_' + name), name, score: 0, timeMs: 0, demo: false });
+
+check('typing "Rich" picks up the remote with nobody tapping anything', () => {
+  const r = room([P('Dave'), P('Sully')]);
+  hostJoin.call(r, 'id_rich', 'Rich');
+  assert(r.state.commishId === 'id_rich',
+    'Rich joined and the remote did not move to him; commishId is ' + JSON.stringify(r.state.commishId));
+});
+
+check('"Big Rich" checking in leaves the remote alone', () => {
+  const r = room([P('Dave')]);
+  hostJoin.call(r, 'id_big', 'Big Rich');
+  assert(r.state.commishId === '', 'Big Rich took the remote; commishId is ' + JSON.stringify(r.state.commishId));
+});
+
+check('the pickup never overrides a hand-off already made', () => {
+  const r = room([P('Dave', 'id_dave')], 'id_dave');     // room already gave Dave the remote
+  hostJoin.call(r, 'id_rich', 'Rich');
+  assert(r.state.commishId === 'id_dave',
+    'Rich checking in late silently took the remote off Dave');
+});
+
+check('a second "Rich" does not inherit the remote from the first', () => {
+  const r = room([]);
+  hostJoin.call(r, 'id_rich1', 'Rich');
+  hostJoin.call(r, 'id_rich2', 'Rich');
+  assert(r.state.commishId === 'id_rich1', 'the remote moved to the second Rich');
+  assert(r.state.players[1].name === 'Rich (2)', 'the second Rich was not disambiguated');
+});
+
+check('tapping a name still works in both directions', () => {
+  const src = lift(/^  setCommish\(id\) \{[\s\S]*?\n  \}$/m, 'setCommish()');
+  assert(/this\.state\.commishId === id \? "" : id/.test(src),
+    'setCommish no longer toggles, so the remote cannot be handed back');
+});
+
+// ── the invite ──────────────────────────────────────────────────────────────
+console.log('\ngetting the link out of the room');
+
+check('the invite carries a code somebody can retype, not just a link', () => {
+  const src = lift(/^  inviteText\(code\) \{[\s\S]*?\n  \}$/m, 'inviteText()');
+  const inviteText = new Function('joinUrlFor', 'return function (code) {' +
+    src.replace(/^  inviteText\(code\) \{/, '').replace(/\n  \}$/, '')
+       .replace(/this\.joinUrlFor/g, 'joinUrlFor') + '}')((c) => 'https://example.test/#' + c);
+  const out = inviteText('ABCD');
+  assert(out.includes('ABCD'), 'the room code is not in the invite text');
+  assert(out.includes('https://example.test/#ABCD'), 'the join link is not in the invite text');
+});
+
+check('sharing falls back to the clipboard where there is no share sheet', () => {
+  const src = lift(/^  shareInvite = \(\) => \{[\s\S]*?\n  \};$/m, 'shareInvite()');
+  assert(/navigator\.share/.test(src), 'shareInvite never tries the native share sheet');
+  assert(/navigator\.clipboard/.test(src),
+    'no clipboard fallback — the button would do nothing on a desktop browser');
+  // A dismissed share sheet rejects. That is a person changing their mind,
+  // not a failure worth reporting.
+  assert(/\.catch\(/.test(src), 'a dismissed share sheet would surface as an unhandled rejection');
+});
+
+// ── starting the game ───────────────────────────────────────────────────────
+console.log('\nnot starting without everybody');
+
+check('a short roster has to be confirmed, a full one does not', () => {
+  const src = lift(/^  startGame = \(\) => \{[\s\S]*?\n  \};$/m, 'startGame()');
+  assert(/players\.length < MAX_PLAYERS/.test(src), 'the TV starts a short roster with no confirm');
+  assert(/startArmed/.test(src), 'the TV kick off has no armed state');
+  // The confirm must not apply at a full roster, or the commissioner presses
+  // twice every single night for no reason.
+  assert(/!this\.state\.startArmed/.test(src),
+    'the second press is not what actually starts the game');
+});
+
+check('the arm state cannot survive into the next room', () => {
+  const goHome = lift(/^  goHome = \(\) => \{[\s\S]*?\n  \};$/m, 'goHome()');
+  assert(/startArmed: false/.test(goHome), 'startArmed survives a return home');
+  const goHost = lift(/^  goHost = \(\) => \{[\s\S]*?\n  \};$/m, 'goHost()');
+  assert(/startArmed: false/.test(goHost), 'startArmed survives into a freshly minted room');
 });
 
 // ── the fabricated field ────────────────────────────────────────────────────
