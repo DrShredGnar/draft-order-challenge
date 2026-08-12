@@ -2359,7 +2359,12 @@ class Component extends DCLogic {
       // "unavailable — demo mode only" is a developer's sentence. What the
       // room needs to know is whether phones can reach this screen.
       // Unknown states fall back to their own name, never to "offline".
-      rtLabel: RT_LABEL[st.rt] || st.rt,
+      // hasOwnProperty rather than a bare lookup: "constructor" and "toString"
+      // are inherited from Object.prototype and would come back as functions,
+      // putting function source in the footer. Not reachable today — rt is
+      // only ever set from the five literals above — but the fallback is
+      // there precisely for a state nobody has thought of yet.
+      rtLabel: Object.prototype.hasOwnProperty.call(RT_LABEL, st.rt) ? RT_LABEL[st.rt] : st.rt,
       joinCode: st.joinCode, joinName: st.joinName, onJoinCode: this.onJoinCode, onJoinName: this.onJoinName,
       onJoinKey: this.onJoinKey,
       submitJoin: this.submitJoin, joinNote: st.joinNote,

@@ -449,9 +449,9 @@ const rtLabelMap = new Function(
   lift(/const RT_LABEL = \{[\s\S]*?\n\};/, 'RT_LABEL') + 'return RT_LABEL;')();
 
 check('the app can reach exactly the states we think it can', () => {
-  assert(RT_STATES.length >= 4,
+  assert(RT_STATES.length >= 5,
     'found only ' + RT_STATES.length + ' realtime states in the bundle: ' + RT_STATES.join(', '));
-  for (const want of ['connecting', 'ready', 'live', 'offline']) {
+  for (const want of ['connecting', 'ready', 'live', 'reconnecting', 'offline']) {
     assert(RT_STATES.indexOf(want) !== -1, 'the "' + want + '" state has disappeared from the code');
   }
 });
@@ -483,9 +483,25 @@ check('a healthy boot does not read as a broken one', () => {
     'the ready state does not tell the room it can start: ' + JSON.stringify(rtLabelMap.ready));
 });
 
+check('an unknown state renders its own name, not something off the prototype', () => {
+  // "constructor" and "toString" are inherited from Object.prototype, so a
+  // bare RT_LABEL[st.rt] returns a function and the footer renders its source.
+  // Unreachable while rt is only ever set from literals; the fallback exists
+  // for the state nobody has thought of yet, so it should hold anyway.
+  const expr = lift(/rtLabel: .*$/m, 'rtLabel').replace(/^rtLabel:\s*/, '').replace(/,\s*$/, '');
+  const rtLabel = new Function('RT_LABEL', 'st', 'return ' + expr + ';');
+  for (const st of ['constructor', 'toString', 'valueOf', 'hasOwnProperty', 'nonsense']) {
+    const out = rtLabel(rtLabelMap, { rt: st });
+    assert(typeof out === 'string', 'the "' + st + '" state produced a ' + typeof out + ', not a string');
+    assert(out === st, 'the "' + st + '" state rendered ' + JSON.stringify(String(out)) + ' instead of its own name');
+  }
+});
+
 check('the label is a lookup, so a new state cannot inherit the scary one', () => {
-  const src = lift(/rtLabel: [^,]+,/, 'rtLabel');
+  const src = lift(/rtLabel: .*$/m, 'rtLabel');
   assert(/RT_LABEL\[st\.rt\]/.test(src), 'rtLabel is not a keyed lookup');
+  assert(/hasOwnProperty\.call\(RT_LABEL, st\.rt\)/.test(src),
+    'the lookup is bare again, so "constructor" and "toString" return functions off the prototype');
   assert(!/practice game only/.test(src),
     'the offline sentence is back in the fallback position, where any unmapped state inherits it');
 });
