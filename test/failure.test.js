@@ -163,36 +163,164 @@ check('the channel subscribes to the states that are not SUBSCRIBED', () => {
 // ── the board ───────────────────────────────────────────────────────────────
 console.log('\nseeing where you stand');
 
-check('a player outside the top five still sees their own row', () => {
-  // Lifting the whole view model is not practical, so this reproduces the
-  // shipped selection and asserts the property that matters. The guard
-  // against regression is the source check below it.
+// The phone board is not truncated at all. It shipped as slice(0, 6); the
+// first fix for that was top-five-plus-your-own-row, which still hid the back
+// half of a twelve-person league from everyone. The region already scrolls,
+// so the answer was never fewer rows — it was a way to find yourself in them.
+check('the phone board is never truncated', () => {
+  assert(!/\.slice\(0, 6\)/.test(template),
+    'miniBoard is back to slice(0, 6); most of the room is missing');
+  assert(!/const top = board\.slice\(0, 5\)/.test(template),
+    'miniBoard is back to top-five-plus-me; the back half of the league is missing');
+  const src = lift(/v\.miniBoard = board\.map\(\([\s\S]*?\}\)\);/, 'miniBoard');
+  assert(/board\.map\(/.test(src), 'miniBoard no longer maps the whole board');
+});
+
+check('every player on the board gets a row, and exactly one is marked as you', () => {
+  // Reproduces the shipped selection so the property is asserted directly.
   const board = Array.from({ length: 12 }, (_, i) => ({ id: 'p' + i, rank: i + 1, name: 'P' + i, score: 12 - i, timeMs: i * 1000 }));
-  const myId = 'p10';                                   // 11th of 12
-  const meRow = board.find((b) => b.id === myId);
-  const top = board.slice(0, 5);
-  const rows = top.slice();
-  let gapAt = -1;
-  if (meRow && !top.some((b) => b.id === myId)) { gapAt = rows.length; rows.push(meRow); }
-  assert(rows.some((r) => r.id === myId), '11th place is not on their own board');
-  assert(gapAt === 5, 'no gap marker between the top five and the player');
-  assert(rows.length === 6, 'expected five plus me, got ' + rows.length);
+  for (const myId of ['p0', 'p4', 'p10', 'p11']) {
+    const rows = board.map((b) => ({ rank: b.rank, me: b.id === myId ? '1' : '' }));
+    assert(rows.length === 12, myId + ': expected all 12 rows, got ' + rows.length);
+    assert(rows.filter((r) => r.me === '1').length === 1, myId + ': own row is not marked exactly once');
+    assert(rows[rows.length - 1].rank === 12, myId + ': last place is missing from the board');
+  }
 });
 
-check('a player inside the top five is not listed twice', () => {
-  const board = Array.from({ length: 12 }, (_, i) => ({ id: 'p' + i, rank: i + 1 }));
-  const myId = 'p2';
-  const top = board.slice(0, 5);
-  const rows = top.slice();
-  if (!top.some((b) => b.id === myId)) rows.push(board.find((b) => b.id === myId));
-  assert(rows.filter((r) => r.id === myId).length === 1, 'a top-five player appears twice');
+check('the scroll-into-view fires once per question, not on every render', () => {
+  const src = lift(/^  componentDidUpdate\(\) \{[\s\S]*?\n  \}$/m, 'componentDidUpdate()');
+  assert(/data-me="1"/.test(src), 'nothing scrolls the player\'s own row into view');
+  assert(/scrolledFor/.test(src),
+    'the scroll is not keyed, so it re-fires on every render and fights anyone scrolling the list');
+  assert(/block: "nearest"/.test(src),
+    'block:"nearest" is what leaves the list alone when the row is already visible');
 });
 
-check('the view model no longer truncates the board to a flat six', () => {
-  assert(!/\(s\.board \|\| \[\]\)\.slice\(0, 6\)/.test(template),
-    'miniBoard is back to slice(0, 6); ranks 7-12 cannot see themselves');
-  assert(/const meRow = board\.find\(/.test(template),
-    'the view model no longer looks up the player\'s own row');
+// ── watching the reveal without the room ────────────────────────────────────
+console.log('\nthe reveal, on a phone');
+
+// The phone used to show your own pick number and the words "Watch the big
+// screen." Anyone playing remotely got a dash for half a minute and never saw
+// the board at all. Nothing new crosses the wire for the fix — the snapshot
+// has always carried the ranked board, the revealed count and the draft size.
+const pFinalBody = lift(/if \(v\.pFinal\) \{[\s\S]*?\n      \}/, 'the pFinal branch')
+  .replace(/^if \(v\.pFinal\) \{/, '').replace(/\n      \}$/, '');
+const NAMES = ['Sully', 'Nate', 'Big Rich', 'Petey', 'Wes', 'Cam', 'Theo', 'Gunner', 'Dave', 'Hollis', 'Marcus', 'Zach'];
+const BOARD = NAMES.map((n, i) => ({ id: 'p' + i, name: n, score: 24 - i * 2, timeMs: (i + 1) * 1400, rank: i + 1 }));
+const pts = (n) => n + (n === 1 ? ' pt' : ' pts');
+const ordinal = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+function pFinal(revealed, myId) {
+  const v = {}, st = { myId, voOn: false };
+  new Function('v', 'st', 's', 'pts', 'ordinal', 'SNAKE_DRAFT', 'self_',
+    pFinalBody.replace(/this\./g, 'self_.'))(v, st, { board: BOARD, draftTotal: 12, revealed }, pts, ordinal, true, { playCall() {} });
+  return v;
+}
+
+check('the phone renders the whole board at every stage of the reveal', () => {
+  for (const revealed of [0, 1, 6, 11, 12]) {
+    const v = pFinal(revealed, 'p10');
+    assert(v.pDraftRows && v.pDraftRows.length === 12,
+      'revealed=' + revealed + ': expected 12 rows, got ' + (v.pDraftRows || []).length);
+  }
+});
+
+check('picks appear worst to first, one at a time', () => {
+  const named = (v) => v.pDraftRows.filter((d) => d.name !== '—' && d.name !== 'ON THE CLOCK').map((d) => Number(d.pickNum));
+  assert(named(pFinal(0, 'p0')).length === 0, 'a pick is already showing before the reveal starts');
+  assert(named(pFinal(1, 'p0')).join() === '12', 'the first pick out is not pick 12');
+  assert(named(pFinal(6, 'p0')).join() === '7,8,9,10,11,12', 'six revealed should be picks 7-12');
+  assert(named(pFinal(12, 'p0')).length === 12, 'the finished board is not fully revealed');
+});
+
+check('the next pick is on the clock, and only that one', () => {
+  const onClock = (v) => v.pDraftRows.filter((d) => d.name === 'ON THE CLOCK').map((d) => Number(d.pickNum));
+  assert(onClock(pFinal(0, 'p0')).join() === '12', 'pick 12 is not on the clock at the start');
+  assert(onClock(pFinal(6, 'p0')).join() === '6', 'pick 6 is not on the clock after six reveals');
+  assert(onClock(pFinal(12, 'p0')).length === 0, 'something is still on the clock after the last pick');
+});
+
+check('your own row is marked at every stage, revealed or not', () => {
+  for (const revealed of [0, 6, 12]) {
+    const ringed = pFinal(revealed, 'p10').pDraftRows.filter((d) => d.ring !== 'none').map((d) => d.pickNum);
+    assert(ringed.join() === '11', 'revealed=' + revealed + ': own row not ringed exactly once, got ' + JSON.stringify(ringed));
+  }
+});
+
+check('exactly one row is flagged as the pick that just landed', () => {
+  const latest = (v) => v.pDraftRows.filter((d) => d.latest === '1').map((d) => Number(d.pickNum));
+  assert(latest(pFinal(0, 'p0')).length === 0, 'a row is flagged as latest before anything has been revealed');
+  assert(latest(pFinal(1, 'p0')).join() === '12', 'the newest pick is not flagged for the scroll');
+  assert(latest(pFinal(7, 'p0')).join() === '6', 'the newest pick is not flagged for the scroll');
+});
+
+check('nobody is told to watch a screen they cannot see', () => {
+  for (const revealed of [0, 6, 12]) {
+    for (const id of ['p0', 'p10', 'p11', 'nobody']) {
+      const note = pFinal(revealed, id).myFinalNote || '';
+      assert(!/big screen/i.test(note),
+        'the phone still says "watch the big screen" (revealed=' + revealed + ', ' + id + '): ' + note);
+    }
+  }
+});
+
+check('the reveal read is opt-in and costs nothing until it is tapped', () => {
+  assert(pFinal(0, 'p0').playCallLabel === 'Play the call', 'the call is not offered on the phone');
+  const src = lift(/^  playCall = \(\) => \{[\s\S]*?\n  \};$/m, 'playCall()');
+  assert(/new Audio\("reveal-vo\.mp3"\)/.test(src), 'playCall does not load the reveal read');
+  assert(/if \(!this\.playerVo\)/.test(src),
+    'the audio object is created eagerly; a phone that never taps would fetch the file anyway');
+  // The host arms its read at kickoff. The phone must not, or every phone in
+  // the room pulls the file down whether or not anyone wants it.
+  const armed = template.match(/armRevealVo\(\)\s*\{[\s\S]*?\n  \}/);
+  assert(armed && !/playerVo/.test(armed[0]), 'the phone read is being armed alongside the host read');
+});
+
+// ── the running ball ────────────────────────────────────────────────────────
+console.log('\nthe ball crossing the bar');
+
+// Two ways this stops moving, both silent, both shipped:
+//
+//   1. Positioning the runner with `transform` on the SAME element that runs
+//      lofgBob. A running animation owns the property it animates, so the
+//      inline translate is discarded and the ball sits at the left edge
+//      bobbing in place. Verified in a browser: the computed matrix came back
+//      as pure rotation with translation components 0, 0.
+//   2. Expressing the travel in `vw`. The bar is not the viewport — the phone
+//      column is capped at 560px and padded, the host column is padded — so
+//      the ball overshoots the end and disappears into `overflow:hidden`.
+check('nothing that runs lofgBob is also positioned by transform', () => {
+  const bob = /animation:\s*lofgBob/;
+  for (const m of template.matchAll(/<(svg|div|span)\b[^>]*style="([^"]*)"[^>]*>/g)) {
+    const style = m[2];
+    if (!bob.test(style)) continue;
+    const positioning = /transform:[^;"]*(?:translateX|translate)\(/.test(style);
+    assert(!positioning,
+      'an element runs lofgBob AND sets a positioning transform, so the animation ' +
+      'will discard the travel and the ball will sit still:\n           ' + style.slice(0, 150));
+  }
+});
+
+check('the travel is a percentage of the bar, never a viewport unit', () => {
+  const movers = [...template.matchAll(/transform:translateX\(\{\{ (\w+) \}\}\)/g)].map((m) => m[1]);
+  assert(movers.length >= 2, 'expected the playhead and the runner to share a mover binding');
+  for (const name of new Set(movers)) {
+    const decl = template.match(new RegExp('v\\.' + name + ' = ([^;]+);'));
+    assert(decl, 'no view-model value for {{ ' + name + ' }}');
+    assert(!/vw|vh|vmin|vmax/.test(decl[1]),
+      '{{ ' + name + ' }} is expressed in viewport units: ' + decl[1].trim() +
+      ' — the bar is narrower than the viewport, so the ball runs off the end');
+    assert(/"%"/.test(decl[1]),
+      '{{ ' + name + ' }} is not a percentage, so it no longer tracks the bar width');
+  }
+});
+
+check('each mover is a full-width child, so a percentage means the whole bar', () => {
+  // translateX(47%) moves an element by 47% of ITS OWN width. That only equals
+  // 47% of the bar if the mover is exactly as wide as the bar.
+  for (const m of template.matchAll(/style="([^"]*transform:translateX\(\{\{ \w+ \}\}\)[^"]*)"/g)) {
+    assert(/width:100%/.test(m[1]),
+      'a percentage mover is not width:100% of the bar, so its travel is scaled wrong:\n           ' + m[1].slice(0, 140));
+  }
 });
 
 // ── names ───────────────────────────────────────────────────────────────────

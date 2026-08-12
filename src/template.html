@@ -779,10 +779,25 @@ p{letter-spacing:.005em}
         <!-- transform:scaleX off a fixed-width track instead of animating
              `width`: same picture, composited instead of re-laid-out. -->
         <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform-origin:left center;transform:scaleX({{ clockFrac }});will-change:transform;background:linear-gradient(90deg,color-mix(in srgb,var(--color-accent) 8%,transparent),color-mix(in srgb,var(--color-accent) 28%,transparent));transition:transform .9s linear"></div>
-        <svg sc-camel-view-box="0 0 48 30" width="30" height="19" style="position:absolute;top:50%;left:0;transform:translate({{ runnerShift }},-50%);will-change:transform;transition:transform .9s linear;animation:lofgBob .42s ease-in-out infinite">
-          <ellipse cx="24" cy="15" rx="22" ry="13" fill="#6b3a1f" stroke="var(--color-accent-100)" stroke-width="2.5"></ellipse>
-          <path d="M7 15h8M33 15h8M18 15h12M20 10.5v9M24 10.5v9M28 10.5v9" stroke="var(--color-accent-100)" stroke-width="2.5" stroke-linecap="round"></path>
-        </svg>
+        <!-- The runner travels on a wrapper, not on itself. Two reasons, and
+             the first one is why the ball sat dead at the left edge on every
+             phone: an element that is running lofgBob has its `transform`
+             owned by the animation for as long as it runs, so a translate in
+             the inline style is simply discarded. The bob won and the travel
+             never happened. Positioning has to live on a different element
+             from the one being animated.
+
+             Second, the wrapper is width:100% of the BAR, so translateX(47%)
+             means 47% of the track. The previous vw arithmetic measured the
+             viewport instead, which is wider than this bar on every screen —
+             the column is capped at 560px and padded — so the ball also ran
+             off the right end into the overflow near zero. -->
+        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform:translateX({{ clockPctStr }});will-change:transform;transition:transform .9s linear">
+          <svg sc-camel-view-box="0 0 48 30" width="30" height="19" style="position:absolute;top:50%;left:-15px;margin-top:-9.5px;animation:lofgBob .42s ease-in-out infinite">
+            <ellipse cx="24" cy="15" rx="22" ry="13" fill="#6b3a1f" stroke="var(--color-accent-100)" stroke-width="2.5"></ellipse>
+            <path d="M7 15h8M33 15h8M18 15h12M20 10.5v9M24 10.5v9M28 10.5v9" stroke="var(--color-accent-100)" stroke-width="2.5" stroke-linecap="round"></path>
+          </svg>
+        </div>
       </div>
       <!-- The question now leads the type scale on this screen. -->
       <h2 style="flex:none;margin:0;font-family:var(--font-heading);font-size:clamp(28px,6.6vw,38px);font-weight:700;line-height:1.08;letter-spacing:.005em;text-transform:none;text-wrap:pretty;margin:2px 0">{{ qText }}</h2>
@@ -814,11 +829,8 @@ p{letter-spacing:.005em}
         <div style="font-size:13px;color:var(--color-accent-300)">{{ pStanding }}</div>
       </div>
       <div style="flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid var(--color-divider);padding-top:12px;display:flex;flex-direction:column;gap:5px">
-        <sc-for list="{{ miniBoard }}" as="r" hint-placeholder-count="5">
-          <sc-if value="{{ r.gap }}">
-            <div aria-hidden="true" style="text-align:center;font:600 12px var(--font-heading);letter-spacing:.3em;color:var(--color-muted);padding:1px 0">···</div>
-          </sc-if>
-          <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:var(--radius-sm);background:{{ r.rowBg }};box-shadow:{{ r.rowRing }}">
+        <sc-for list="{{ miniBoard }}" as="r" hint-placeholder-count="12">
+          <div data-me="{{ r.me }}" style="flex:none;display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:var(--radius-sm);background:{{ r.rowBg }};box-shadow:{{ r.rowRing }}">
             <span style="width:20px;font:600 13px var(--font-heading);color:var(--color-muted);font-variant-numeric:tabular-nums">{{ r.rank }}</span>
             <span style="flex:1;min-width:0;font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
             <span style="font-size:11px;color:var(--color-muted);font-variant-numeric:tabular-nums">{{ r.speed }}</span>
@@ -840,18 +852,46 @@ p{letter-spacing:.005em}
     </div>
   </sc-if>
 
+  <!-- ── THE REVEAL, ON A PHONE ────────────────────────────────────────────
+       This used to be your own pick number and the words "Watch the big
+       screen." That is fine when everyone is in the room and wrong for
+       anybody playing remotely: they got a dash for half a minute, then a
+       number, and never saw the board come out at all.
+
+       Nothing new crosses the wire for this. The snapshot has always carried
+       the ranked board, the revealed count and the draft size, so the phone
+       can mirror exactly what the TV is drawing. -->
   <sc-if value="{{ pFinal }}">
-    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center">
-      <div style="font:italic 700 15px/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:var(--color-accent-400)">Your pick</div>
-      <div style="font-family:var(--font-heading);font-size:clamp(94px,26vw,166px);font-weight:800;line-height:.92;letter-spacing:.005em;animation:lofgSlam .5s ease-out">{{ myPickLabel }}</div>
-      <div style="font-size:16px;color:var(--color-muted-strong)">{{ myFinalNote }}</div>
-      <!-- Worst-to-first means last place is announced first, alone, with
-           eleven people watching. It is a snake draft, so pick 12 is also
-           pick 13 — the consolation was sitting in the format the whole
-           time and the screen was not saying it. -->
-      <sc-if value="{{ myTurnNote }}">
-      <div style="margin-top:4px;font:italic 700 clamp(15px,4.4vw,19px)/1.35 var(--font-heading);letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-300);max-width:22ch">{{ myTurnNote }}</div>
-      </sc-if>
+    <div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:9px">
+      <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center">
+        <div style="font:italic 700 13px/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:var(--color-accent-400)">Your pick</div>
+        <div style="font-family:var(--font-heading);font-size:clamp(56px,15vw,88px);font-weight:800;line-height:.92;letter-spacing:.005em;animation:lofgSlam .5s ease-out">{{ myPickLabel }}</div>
+        <div style="font-size:13px;line-height:1.45;color:var(--color-muted-strong);max-width:34ch;text-wrap:pretty">{{ myFinalNote }}</div>
+        <!-- Worst-to-first means last place is announced first, alone, with
+             eleven people watching. It is a snake draft, so pick 12 is also
+             pick 13 — the consolation was sitting in the format the whole
+             time and the screen was not saying it. -->
+        <sc-if value="{{ myTurnNote }}">
+        <div style="margin-top:3px;font:italic 700 clamp(14px,4.2vw,18px)/1.35 var(--font-heading);letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-300);max-width:24ch">{{ myTurnNote }}</div>
+        </sc-if>
+      </div>
+      <div class="chyron-eyebrow" style="flex:none;font-size:12px">{{ pRevealHeadline }}</div>
+      <div style="flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:4px">
+        <sc-for list="{{ pDraftRows }}" as="d" hint-placeholder-count="12">
+          <div data-latest="{{ d.latest }}" style="flex:none;display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:var(--radius-sm);background:{{ d.bg }};border:1px solid {{ d.border }};box-shadow:{{ d.ring }};opacity:{{ d.opacity }};animation:{{ d.anim }}">
+            <span style="flex:none;width:26px;font-family:var(--font-heading);font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;color:{{ d.pickColor }}">{{ d.pickNum }}</span>
+            <span style="flex:1;min-width:0;font-family:var(--font-heading);font-size:19px;font-weight:800;text-transform:uppercase;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:{{ d.nameColor }}">{{ d.name }}</span>
+            <span style="flex:none;font-size:11px;color:var(--color-muted);font-variant-numeric:tabular-nums">{{ d.detail }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <span style="flex:1;min-width:0;font-size:12px;line-height:1.4;color:var(--color-muted);text-wrap:pretty">{{ pRevealFoot }}</span>
+        <!-- Opt-in, never automatic. Twelve phones unmuting themselves in one
+             room would be bedlam, and the file is not fetched until it is
+             asked for — so a phone in the room costs nothing. -->
+        <button sc-camel-on-click="{{ playCall }}" style="flex:none;cursor:pointer;min-height:44px;padding:0 14px;border-radius:var(--radius-md);border:1px solid {{ playCallBorder }};background:transparent;color:{{ playCallColor }};font:italic 700 12px/1 var(--font-heading);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap">{{ playCallLabel }}</button>
+      </div>
     </div>
   </sc-if>
 </main>
@@ -999,8 +1039,15 @@ p{letter-spacing:.005em}
           <span style="position:absolute;top:50%;left:90%;transform:translate(-50%,-50%);font-family:var(--font-heading);font-size:clamp(12px,.95vw,20px);font-weight:800;letter-spacing:.06em;color:color-mix(in srgb, var(--color-text) 26%, transparent)">10</span>
         </div>
         <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform-origin:left center;transform:scaleX({{ clockFrac }});will-change:transform;background:linear-gradient(90deg,color-mix(in srgb,var(--color-accent) 8%,transparent),color-mix(in srgb,var(--color-accent) 30%,transparent));transition:transform .9s linear"></div>
-        <div style="position:absolute;top:0;bottom:0;left:0;width:2px;transform:translateX({{ playheadShift }});will-change:transform;background:{{ clockColor }};box-shadow:0 0 16px {{ clockGlow }};transition:transform .9s linear"></div>
-        <div style="position:absolute;top:50%;left:0;transform:translate({{ runnerShift }},-50%);will-change:transform;transition:transform .9s linear;display:flex;align-items:center;gap:6px">
+        <!-- Same wrapper trick as the phone, and for the same second reason:
+             a width:100% child translated by a percentage travels the BAR,
+             not the viewport. The vw arithmetic overshot by the host padding
+             at both ends. -->
+        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform:translateX({{ clockPctStr }});will-change:transform;transition:transform .9s linear">
+          <div style="position:absolute;top:0;bottom:0;left:0;width:2px;background:{{ clockColor }};box-shadow:0 0 16px {{ clockGlow }}"></div>
+        </div>
+        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform:translateX({{ clockPctStr }});will-change:transform;transition:transform .9s linear">
+        <div style="position:absolute;top:50%;left:0;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px">
           <span style="display:flex;gap:4px;opacity:.55">
             <span style="width:14px;height:2px;border-radius:1px;background:{{ clockColor }};animation:lofgLegs .32s ease-in-out infinite"></span>
             <span style="width:9px;height:2px;border-radius:1px;background:{{ clockColor }};animation:lofgLegs .32s ease-in-out infinite .16s"></span>
@@ -1010,6 +1057,7 @@ p{letter-spacing:.005em}
             <path d="M6 15h9M33 15h9" stroke="var(--color-accent-100)" stroke-width="2" stroke-linecap="round"></path>
             <path d="M18 15h12M20 10.5v9M24 10.5v9M28 10.5v9" stroke="var(--color-accent-100)" stroke-width="2" stroke-linecap="round"></path>
           </svg>
+        </div>
         </div>
       </div>
       <h1 style="flex:none;margin:0;font-family:var(--font-heading);font-size:clamp(34px,4.8vw,96px);font-weight:700;line-height:1.0;letter-spacing:.005em;text-transform:none;text-wrap:pretty;max-width:26ch">{{ qText }}</h1>
@@ -1452,7 +1500,7 @@ class Component extends DCLogic {
     // joinSearch: "" | "looking" | "missing" | "full" | "found".
     // exitArmed: the host Exit button's two-step confirm.
     // resume: a host session recovered from localStorage, offered on home.
-    link: "", joinSearch: "", exitArmed: false, resume: null,
+    link: "", joinSearch: "", exitArmed: false, resume: null, voOn: false,
     snap: null
   };
 
@@ -1507,7 +1555,31 @@ class Component extends DCLogic {
       if (!this.state.qrFail) this.setState({ qrFail: true });
     }
   }
-  componentDidUpdate() { this.drawQr(); }
+  componentDidUpdate() {
+    this.drawQr();
+    // The phone board lists the whole room and scrolls. Twelve rows is more
+    // than a phone shows at once, so on each new set of results put the
+    // player's own row on screen — once per question, not on every render,
+    // or the list fights anyone scrolling through it.
+    const snap = this.state.snap;
+    const key = !snap ? null
+      : snap.phase === "results" ? "r" + snap.qIndex
+      : snap.phase === "reveal" ? "d" + (snap.revealed || 0)
+      : null;
+    if (key && key !== this.scrolledFor) {
+      const sel = key[0] === "d" ? '[data-latest="1"]' : '[data-me="1"]';
+      this.scrolledFor = key;
+      const row = document.querySelector(sel);
+      // `nearest` leaves the list alone when the row is already visible, so a
+      // player in the top three never sees it move.
+      if (row && row.scrollIntoView) {
+        try { row.scrollIntoView({ block: "nearest", behavior: this.state.reduceMotion ? "auto" : "smooth" }); }
+        catch (e) { row.scrollIntoView(false); }
+      }
+    } else if (!key) {
+      this.scrolledFor = null;
+    }
+  }
 
   // ---- live media queries ----
   // The backdrop and the cold open's plate are both gated on these in JS, not
@@ -1546,6 +1618,7 @@ class Component extends DCLogic {
     if (this.lockTimer) { clearTimeout(this.lockTimer); this.lockTimer = null; }
     if (this.exitTimer) { clearTimeout(this.exitTimer); this.exitTimer = null; }
     if (this.copyTimer) { clearTimeout(this.copyTimer); this.copyTimer = null; }
+    this.stopPlayCall();
     if (this.ch) this.ch.unsubscribe();
   }
 
@@ -1615,12 +1688,12 @@ class Component extends DCLogic {
 
   // ---- navigation ----
   goHome = () => {
-    this.stopClock(); this.clearDemo(); this.stopIntroVo(); this.stopRevealVo();
+    this.stopClock(); this.clearDemo(); this.stopIntroVo(); this.stopRevealVo(); this.stopPlayCall();
     if (this.pingTimer) { clearInterval(this.pingTimer); this.pingTimer = null; }
     if (this.joinGiveUp) { clearTimeout(this.joinGiveUp); this.joinGiveUp = null; }
     this.answeredFor = null;
     if (this.ch) { this.ch.unsubscribe(); this.ch = null; }
-    this.setState({ screen: "home", phase: "lobby", players: [], answers: {}, questions: [], qIndex: 0, revealCount: 0, snap: null, commishId: "", exitArmed: false, joinSearch: "", link: "" });
+    this.setState({ screen: "home", phase: "lobby", players: [], answers: {}, questions: [], qIndex: 0, revealCount: 0, snap: null, commishId: "", exitArmed: false, joinSearch: "", link: "", voOn: false });
   };
 
   // ── Exit ─────────────────────────────────────────────────────────────────
@@ -2049,6 +2122,42 @@ class Component extends DCLogic {
     return !!(s && s.answeredIds && s.answeredIds.indexOf(this.state.myId) !== -1);
   }
 
+  // ── The reveal read, on a phone ──────────────────────────────────────────
+  // Host-only until now, because twelve phones unmuting in one room is worse
+  // than silence. Playing remotely is the case that needs it, so it is a
+  // button rather than a policy: nothing is fetched until it is tapped, and a
+  // phone that never taps still costs zero bytes.
+  //
+  // It starts from the top rather than seeking to the host's position — the
+  // snapshot carries no clock for the hold, and a remote listener taps this
+  // when the board appears, which is when the host started it.
+  playCall = () => {
+    if (this.playerVo && !this.playerVo.paused) {
+      try { this.playerVo.pause(); this.playerVo.currentTime = 0; } catch (e) {}
+      return this.setState({ voOn: false });
+    }
+    if (!this.playerVo) {
+      try {
+        this.playerVo = new Audio("reveal-vo.mp3");
+        this.playerVo.preload = "auto";
+        this.playerVo.addEventListener("ended", () => this.setState({ voOn: false }));
+        // A 404 on the sibling file is not worth an error state; the board is
+        // still the thing being watched.
+        this.playerVo.addEventListener("error", () => this.setState({ voOn: false }));
+      } catch (e) { this.playerVo = null; return; }
+    }
+    try {
+      this.playerVo.currentTime = 0;
+      const r = this.playerVo.play();
+      if (r && r.catch) r.catch(() => this.setState({ voOn: false }));
+      this.setState({ voOn: true });
+    } catch (e) { this.setState({ voOn: false }); }
+  };
+  stopPlayCall() {
+    if (!this.playerVo) return;
+    try { this.playerVo.pause(); this.playerVo.currentTime = 0; } catch (e) {}
+  }
+
   // ---- share ----
   shareText() {
     const order = this.ranked();
@@ -2211,11 +2320,14 @@ class Component extends DCLogic {
         const stale = this.linkIsStale();
         const frac = Math.max(0, Math.min(1, s.secondsLeft / QUESTION_SECONDS));
         v.clock = mmss(s.secondsLeft);
-        // scaleX off a full-width track, and translateX off the left edge:
-        // both composited, where `width` and `left` forced a layout pass every
-        // second for thirty seconds, twelve times a night.
+        // scaleX off a full-width track, and translateX by a PERCENTAGE of
+        // that same full-width track: both composited, where `width` and
+        // `left` forced a layout pass every second for thirty seconds, twelve
+        // times a night. The percentage matters — a translateX in vw measures
+        // the viewport, and this bar is neither the viewport's width nor a
+        // fixed fraction of it.
         v.clockFrac = frac.toFixed(3);
-        v.runnerShift = "calc(" + (frac * 100).toFixed(2) + "vw - 15px)";
+        v.clockPctStr = (frac * 100).toFixed(2) + "%";
         // A frozen clock that still looks live is the lie. Once the link is
         // stale the numeral goes grey, the blink stops, and the status line
         // says what is actually happening.
@@ -2267,21 +2379,21 @@ class Component extends DCLogic {
         v.pTimeNote = mine ? `You answered in ${fmt(mine.ms)}` + (s.fastest ? ` \u00b7 fastest was ${s.fastest.name} at ${fmt(s.fastest.ms)}` : "") : "The clock beat you.";
 
         // \u2500\u2500 The board, and your place on it \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-        // This was `slice(0, 6)`, so anyone ranked 7th or worse looked at a
-        // list that did not contain them. The people with the least reason
-        // to keep playing were the exact set the screen stopped addressing.
+        // The whole room, every time. This was `slice(0, 6)`, so anyone
+        // ranked 7th or worse looked at a list that did not contain them \u2014
+        // and the first fix for that (top five plus your own row) still hid
+        // the back half of a twelve-person league from everybody.
+        //
+        // There was never a reason to truncate: this region is already
+        // `flex:1; min-height:0; overflow-y:auto`, so it scrolls. What it
+        // needed was not fewer rows but a way to find yourself among them,
+        // which is the highlight, the ring, and the scroll-into-view in
+        // componentDidUpdate.
         const board = s.board || [];
         const meRow = board.find((b) => b.id === st.myId);
-        const top = board.slice(0, 5);
-        const rows = top.slice();
-        let gapAt = -1;
-        if (meRow && !top.some((b) => b.id === st.myId)) {
-          gapAt = rows.length;               // "\u00b7\u00b7\u00b7" between 5th and you
-          rows.push(meRow);
-        }
-        v.miniBoard = rows.map((b, i) => ({
+        v.miniBoard = board.map((b) => ({
           rank: b.rank, name: b.name, score: b.score, speed: (b.timeMs / 1000).toFixed(1) + "s",
-          gap: i === gapAt,
+          me: b.id === st.myId ? "1" : "",
           rowBg: b.id === st.myId ? "color-mix(in srgb,var(--color-accent) 14%,transparent)" : "transparent",
           rowRing: b.id === st.myId ? "inset 0 0 0 1px var(--color-accent-700)" : "none"
         }));
@@ -2325,12 +2437,63 @@ class Component extends DCLogic {
       v.leaveRoom = this.goHome;
       v.leaveLabel = s ? "Leave this room" : "Wrong code? Go back";
       if (v.pFinal) {
-        const me2 = (s.board || []).find((b) => b.id === st.myId);
-        const total = s.draftTotal || (s.board || []).length;
-        const shown = total - (s.revealed || 0);
-        const revealedMine = me2 && me2.rank >= shown + 1;
+        const order = s.board || [];
+        const me2 = order.find((b) => b.id === st.myId);
+        const total = s.draftTotal || order.length;
+        const revealed = s.revealed || 0;
+        const firstShown = total - revealed + 1;      // lowest pick on screen
+        const revealedMine = me2 && me2.rank >= firstShown;
         v.myPickLabel = revealedMine ? "Pick " + me2.rank : "\u2014";
-        v.myFinalNote = !me2 ? "Watch the big screen." : revealedMine ? `${pts(me2.score)} \u00b7 ${(me2.timeMs / 1000).toFixed(1)}s on correct answers \u00b7 ${ordinal(me2.rank)} place` : "Watch the big screen. Picks are coming out from the bottom.";
+        // "Watch the big screen" is the wrong instruction for anyone who is
+        // not in the room, and they are exactly the people staring at this.
+        v.myFinalNote = !me2 ? "The board is coming out below, worst to first."
+          : revealedMine ? `${pts(me2.score)} \u00b7 ${(me2.timeMs / 1000).toFixed(1)}s on correct answers \u00b7 ${ordinal(me2.rank)} place`
+          : "Still to come. Picks are coming out from the bottom.";
+
+        // \u2500\u2500 The board, mirrored \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+        // Same rules the host draws: a pick is on screen once the reveal has
+        // counted down to it, the one below it is on the clock, the rest are
+        // held back. Pick order top to bottom, so it reads as the same draft
+        // board rather than a different view of it.
+        v.pDraftRows = order.map((p) => {
+          const pick = p.rank;
+          const shown = pick >= firstShown;
+          const onClock = !shown && pick === firstShown - 1 && revealed < total;
+          const mine = p.id === st.myId;
+          const first = shown && pick === 1;
+          return {
+            pickNum: String(pick).padStart(2, "0"),
+            name: shown ? p.name : onClock ? "ON THE CLOCK" : "\u2014",
+            detail: shown ? `${p.score} \u00b7 ${(p.timeMs / 1000).toFixed(1)}s` : "",
+            // The row that just landed, for the scroll in componentDidUpdate.
+            latest: shown && pick === firstShown && revealed > 0 ? "1" : "",
+            bg: first ? "color-mix(in srgb,var(--color-accent) 18%,transparent)"
+              : shown ? "var(--color-surface)"
+              : onClock ? "color-mix(in srgb,var(--color-onair) 12%,transparent)"
+              : "transparent",
+            border: first ? "var(--color-accent)"
+              : shown ? "var(--color-line)"
+              : onClock ? "var(--color-onair)"
+              : "var(--color-row-inert)",
+            ring: mine ? "inset 0 0 0 1px var(--color-accent-700)" : "none",
+            opacity: shown ? "1" : onClock ? ".9" : ".45",
+            anim: shown && pick === firstShown ? "lofgSlam .5s ease-out"
+              : onClock ? "lofgPulse 1.4s ease-in-out infinite" : "none",
+            pickColor: first ? "var(--color-accent-200)" : "var(--color-muted)",
+            nameColor: shown ? (mine ? "var(--color-accent-200)" : "var(--color-text)")
+              : onClock ? "var(--onair-ink)" : "var(--color-muted)"
+          };
+        });
+        v.pRevealHeadline = revealed === 0 ? "The board is set."
+          : revealed >= total ? `${order[0] ? order[0].name : "\u2014"} is on the clock.`
+          : `Pick ${firstShown} is in.`;
+        v.pRevealFoot = revealed >= total
+          ? "Ties broken by cumulative time on correct answers."
+          : "One pick every few seconds, worst to first.";
+        v.playCall = this.playCall;
+        v.playCallLabel = st.voOn ? "Stop" : "Play the call";
+        v.playCallBorder = st.voOn ? "var(--color-accent)" : "var(--color-line-strong)";
+        v.playCallColor = st.voOn ? "var(--color-accent-200)" : "var(--color-muted)";
         // Worst-to-first means last place is announced first, alone, in front
         // of everyone \u2014 and their phone gave them the winner's typography
         // with the meaning flipped and nothing else. In a snake draft the
@@ -2417,10 +2580,9 @@ class Component extends DCLogic {
         const frac = Math.max(0, Math.min(1, st.secondsLeft / QUESTION_SECONDS));
         v.clock = mmss(st.secondsLeft);
         v.clockFrac = frac.toFixed(3);
-        // The bar is 100% of the host column, so its own width is the unit
-        // both the playhead and the runner travel in.
-        v.playheadShift = "calc(" + (frac * 100).toFixed(2) + "vw)";
-        v.runnerShift = "calc(" + (frac * 100).toFixed(2) + "vw - 30px)";
+        // One value drives the fill, the playhead and the runner, and it is a
+        // percentage of the bar rather than of the viewport.
+        v.clockPctStr = (frac * 100).toFixed(2) + "%";
         v.clockColor = st.secondsLeft <= 10 ? "#fff" : "var(--onair-ink)";
         v.clockGlow = st.secondsLeft <= 10 ? "rgba(212,24,24,.75)" : "rgba(212,24,24,.35)";
         v.clockBorder = st.secondsLeft <= 10 ? "var(--color-onair)" : "var(--color-clock-idle)";
