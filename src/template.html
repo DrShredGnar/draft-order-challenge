@@ -737,6 +737,19 @@ p{letter-spacing:.005em}
      used to render outside the box with no gesture that could reach them.
      Same failure the host screen already shipped once. -->
 <main style="height:var(--app-h);overflow-y:auto;-webkit-overflow-scrolling:touch;max-width:560px;margin:0 auto;display:flex;flex-direction:column;padding:max(12px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));gap:12px;box-sizing:border-box">
+  <!-- A phone can be running last week's bundle and have no idea: Pages
+       serves index.html with a ten-minute cache and a backgrounded tab holds
+       it longer. The host stamps every snapshot with a hash of its build, so
+       the first message that arrives settles it. Deliberately not blocking —
+       the game still works, and locking somebody out over a false positive
+       would be worse than the mismatch. -->
+  <sc-if value="{{ buildStale }}" hint-placeholder-val="{{ false }}">
+  <div role="alert" style="flex:none;display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:var(--radius-md);background:color-mix(in srgb,var(--color-penalty) 14%,transparent);border:1px solid var(--color-penalty)">
+    <span style="flex:none;width:7px;height:7px;border-radius:50%;background:var(--color-penalty);animation:lofgPulse 1.4s ease-in-out infinite"></span>
+    <span style="flex:1;min-width:0;font-size:12.5px;line-height:1.4;color:var(--color-penalty-bright);text-wrap:pretty">This page is out of date. Reload it. If it says this again, the TV needs reloading too.</span>
+    <button sc-camel-on-click="{{ reloadPage }}" style="flex:none;cursor:pointer;min-height:38px;padding:0 12px;border-radius:var(--radius-sm);border:1px solid var(--color-penalty);background:transparent;color:var(--color-penalty);font:italic 700 12px/1 var(--font-heading);letter-spacing:.14em;text-transform:uppercase">Reload</button>
+  </div>
+  </sc-if>
   <div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px">
     <div style="min-width:0;display:flex;align-items:baseline;gap:8px">
       <h1 style="margin:0;min-width:0;font-family:var(--font-heading);font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ myName }}</h1>
@@ -876,6 +889,20 @@ p{letter-spacing:.005em}
        can mirror exactly what the TV is drawing. -->
   <sc-if value="{{ pFinal }}">
     <div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:9px">
+      <!-- Before your pick lands there is nothing to celebrate, so nothing
+           takes the top of the scale. Leading with an 88px "—" meant the
+           phone showed a placeholder for the thirty to forty-five seconds
+           that are the most interesting part of the night, with the board
+           that is actually moving pushed underneath it. Measured on a
+           phone-width screen: 88px of dash above the fold, board below.
+           Pending is one quiet line; the hero arrives when the number does. -->
+      <sc-if value="{{ myPickPending }}">
+      <div style="flex:none;display:flex;align-items:baseline;justify-content:center;gap:8px;text-align:center">
+        <span style="font:italic 700 12px/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:var(--color-accent-400)">Your pick</span>
+        <span style="font-size:13px;color:var(--color-muted-strong)">{{ myFinalNote }}</span>
+      </div>
+      </sc-if>
+      <sc-if value="{{ myPickRevealed }}">
       <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center">
         <div style="font:italic 700 13px/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:var(--color-accent-400)">Your pick</div>
         <div style="font-family:var(--font-heading);font-size:clamp(56px,15vw,88px);font-weight:800;line-height:.92;letter-spacing:.005em;animation:lofgSlam .5s ease-out">{{ myPickLabel }}</div>
@@ -888,6 +915,7 @@ p{letter-spacing:.005em}
         <div style="margin-top:3px;font:italic 700 clamp(14px,4.2vw,18px)/1.35 var(--font-heading);letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-300);max-width:24ch">{{ myTurnNote }}</div>
         </sc-if>
       </div>
+      </sc-if>
       <div class="chyron-eyebrow" style="flex:none;font-size:12px">{{ pRevealHeadline }}</div>
       <div style="flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:4px">
         <sc-for list="{{ pDraftRows }}" as="d" hint-placeholder-count="12">
@@ -973,7 +1001,7 @@ p{letter-spacing:.005em}
             <button sc-camel-on-click="{{ p.onTap }}" style="text-align:left;cursor:pointer;color:var(--color-text);display:flex;align-items:center;gap:11px;padding:11px 14px;border-radius:var(--radius-md);background:{{ p.bg }};border:1px solid {{ p.border }};border-left:3px solid {{ p.rail }};animation:lofgIn .3s ease-out" style-hover="border-color:var(--color-accent)">
               <span style="flex:none;width:7px;height:7px;border-radius:50%;background:var(--color-accent)"></span>
               <span style="flex:1;min-width:0;font-family:var(--font-heading);font-size:clamp(19px,1.4vw,26px);font-weight:800;text-transform:uppercase;letter-spacing:.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.name }}</span>
-              <span style="flex:none;font:italic 700 clamp(11px,.6vw,14px)/1 var(--font-heading);letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent-300)">{{ p.tag }}</span>
+              <span style="flex:none;font:italic 700 clamp(11px,.6vw,14px)/1 var(--font-heading);letter-spacing:.14em;text-transform:uppercase;color:{{ p.tagColor }}">{{ p.tag }}</span>
             </button>
           </sc-for>
         </div>
@@ -983,6 +1011,12 @@ p{letter-spacing:.005em}
           </sc-if>
           <span style="font-size:13px;color:var(--color-muted)">{{ lobbyHint }}</span>
         </div>
+        <sc-if value="{{ staleNote }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:var(--radius-sm);background:color-mix(in srgb,var(--color-penalty) 12%,transparent);border:1px solid color-mix(in srgb,var(--color-penalty) 55%,transparent);align-self:flex-start;max-width:100%">
+          <span style="flex:none;width:7px;height:7px;border-radius:50%;background:var(--color-penalty);animation:lofgPulse 1.4s ease-in-out infinite"></span>
+          <span style="font:italic 700 clamp(12px,.85vw,15px)/1.3 var(--font-heading);letter-spacing:.14em;text-transform:uppercase;color:var(--color-penalty-bright);text-wrap:pretty">{{ staleNote }}</span>
+        </div>
+        </sc-if>
       </div>
     </div>
   </sc-if>
@@ -1196,6 +1230,11 @@ const QUESTIONS_PER_TIER = 3;
 // I and O are held out so a code cannot be misread as 1 or 0 across a lit
 // room. The mint and the join filter both read from here now; they used to
 // disagree, which made "IOWA" a well-formed code that matched nothing.
+// Substituted by build.py — a content hash of everything in the bundle, so
+// two devices running the same code always agree and two running different
+// code never do. See build_id() for why it is a hash and not a timestamp.
+const BUILD_ID = "{{__BUILD_ID__}}";
+
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ";
 const CODE_REJECT_RE = /[^ABCDEFGHJKLMNPQRSTUVWXYZ]/g;
 // How long a phone looks for a room before it admits the room is not there.
@@ -1701,7 +1740,7 @@ class Component extends DCLogic {
       if (s === "SUBSCRIBED") {
         this.lastSnapAt = Date.now();
         this.setState({ rt: "live", link: "live" });
-        if (role === "player") this.send({ t: "hello", id: this.state.myId, name: this.state.myName });
+        if (role === "player") this.send({ t: "hello", id: this.state.myId, name: this.state.myName, b: BUILD_ID });
         return;
       }
       // CHANNEL_ERROR / TIMED_OUT / CLOSED all previously fell on the floor.
@@ -1725,7 +1764,7 @@ class Component extends DCLogic {
 
   onMsg(m, role) {
     if (role === "host") {
-      if (m.t === "hello") this.hostJoin(m.id, m.name);
+      if (m.t === "hello") this.hostJoin(m.id, m.name, m.b);
       if (m.t === "answer") this.hostAnswer(m.id, m.qIndex, m.opt);
       if (m.t === "cmd") this.hostCmd(m.id, m.c);
     } else {
@@ -1736,7 +1775,7 @@ class Component extends DCLogic {
         if (this.pingTimer) { clearInterval(this.pingTimer); this.pingTimer = null; }
         this.setState({ snap: m.s, link: "live", joinSearch: "found" });
       }
-      if (m.t === "ping") this.send({ t: "hello", id: this.state.myId, name: this.state.myName });
+      if (m.t === "ping") this.send({ t: "hello", id: this.state.myId, name: this.state.myName, b: BUILD_ID });
       // The room exists, it is just out of seats. Distinct from "no room".
       if (m.t === "full" && m.id === this.state.myId) {
         if (this.pingTimer) { clearInterval(this.pingTimer); this.pingTimer = null; }
@@ -1820,6 +1859,16 @@ class Component extends DCLogic {
       if (s.phase === "question") this.beginQuestion(s.qIndex);
       else this.broadcast();
     });
+  };
+  // location.reload(true) is long gone from the spec and ignored, so the
+  // cache-buster goes on the URL. Keeping the hash means a player who
+  // arrived by QR lands back in the same room instead of on the home screen.
+  reloadPage = () => {
+    try {
+      const u = new URL(location.href);
+      u.searchParams.set("v", String(Date.now()));
+      location.replace(u.toString());
+    } catch (e) { location.reload(); }
   };
   goPool = () => this.setState({ screen: "pool" });
   goJoin = () => this.setState({ screen: "join" });
@@ -1908,7 +1957,7 @@ class Component extends DCLogic {
       // catches this player. What changes is that after JOIN_GIVEUP_MS of
       // silence the screen stops pretending and says the room is not there.
       // It used to say "Finding the huddle…" until the phone died.
-      this.pingTimer = setInterval(() => { if (!this.state.snap) this.send({ t: "hello", id, name }); }, 1500);
+      this.pingTimer = setInterval(() => { if (!this.state.snap) this.send({ t: "hello", id, name, b: BUILD_ID }); }, 1500);
       if (this.joinGiveUp) clearTimeout(this.joinGiveUp);
       this.joinGiveUp = setTimeout(() => {
         this.joinGiveUp = null;
@@ -1918,17 +1967,22 @@ class Component extends DCLogic {
   };
 
   // ---- host game ----
-  hostJoin(id, name) {
+  hostJoin(id, name, build) {
     if (!id || !name) return;
     const players = this.state.players.slice();
     const mine = players.find((p) => p.id === id);
+    // Absent means a bundle from before builds were stamped — the oldest
+    // thing in the room, and the one most worth a refresh.
+    const stale = build !== BUILD_ID;
     if (mine) {
       // A rejoining player needs the current state at once — the host otherwise
       // stays silent until the next question and their screen looks dead.
       // A rename is honoured only if the new label is free; the id itself is
       // never reassigned, so a claimed seat cannot be taken over.
-      if (mine.name !== name && !players.some((p) => p.id !== id && p.name === name)) {
-        players[players.indexOf(mine)] = Object.assign({}, mine, { name });
+      if (mine.stale !== stale || (mine.name !== name && !players.some((p) => p.id !== id && p.name === name))) {
+        const patch = { stale };
+        if (mine.name !== name && !players.some((p) => p.id !== id && p.name === name)) patch.name = name;
+        players[players.indexOf(mine)] = Object.assign({}, mine, patch);
         this.setState({ players }, this.broadcast);
         return;
       }
@@ -1943,7 +1997,7 @@ class Component extends DCLogic {
     // they used to collide into one row. Disambiguate rather than merge.
     let label = name;
     for (let n = 2; players.some((p) => p.name === label); n++) label = name + " (" + n + ")";
-    players.push({ id, name: label, score: 0, timeMs: 0, demo: false });
+    players.push({ id, name: label, score: 0, timeMs: 0, demo: false, stale });
     // The commissioner picks himself up on the way in. Only when nobody holds
     // the remote yet, so a deliberate hand-off earlier in the lobby is not
     // quietly undone when he checks in late — and only on the name he
@@ -2154,6 +2208,7 @@ class Component extends DCLogic {
       board: order.map((p, k) => ({ id: p.id, name: p.name, score: p.score, timeMs: p.timeMs, rank: k + 1 })),
       fastest: this.fastest(),
       commishId: this.state.commishId,
+      build: BUILD_ID,
       revealed, draftTotal: this.state.players.length
     };
     this.send({ t: "state", s });
@@ -2390,6 +2445,10 @@ class Component extends DCLogic {
       // The board may have disambiguated this player's label (two Marcuses),
       // so show them what everyone else sees rather than what they typed.
       // The snapshot carries `board`, not `players` — `me` is already it.
+      // Only claim staleness once a snapshot has actually arrived; before
+      // that there is nothing to compare and the join screen owns the story.
+      v.buildStale = !!(s && s.build !== BUILD_ID);
+      v.reloadPage = this.reloadPage;
       v.myName = (me && me.name) || st.myName;
       v.myScore = me ? me.score : 0;
       const phase = s ? s.phase : null;
@@ -2583,12 +2642,20 @@ class Component extends DCLogic {
         const revealed = s.revealed || 0;
         const firstShown = total - revealed + 1;      // lowest pick on screen
         const revealedMine = me2 && me2.rank >= firstShown;
+        // Which half of the screen leads. Until your number is out there is
+        // nothing to put at the top of the type scale, so the board gets it.
+        v.myPickRevealed = !!revealedMine;
+        v.myPickPending = !revealedMine;
         v.myPickLabel = revealedMine ? "Pick " + me2.rank : "\u2014";
         // "Watch the big screen" is the wrong instruction for anyone who is
         // not in the room, and they are exactly the people staring at this.
-        v.myFinalNote = !me2 ? "The board is coming out below, worst to first."
+        // The pending line carries the whole message now, so it reads as one
+        // phrase beside the label rather than as a caption under a number
+        // that has not arrived.
+        v.myFinalNote = !me2 ? "watching the board come out, worst to first"
           : revealedMine ? `${pts(me2.score)} \u00b7 ${(me2.timeMs / 1000).toFixed(1)}s on correct answers \u00b7 ${ordinal(me2.rank)} place`
-          : "Still to come. Picks are coming out from the bottom.";
+          : revealed === 0 ? "still to come"
+          : `still to come \u00b7 ${total - revealed} left`;
 
         // \u2500\u2500 The board, mirrored \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
         // Same rules the host draws: a pick is on screen once the reveal has
@@ -2681,8 +2748,13 @@ class Component extends DCLogic {
       v.exitBorder = st.exitArmed ? "var(--color-onair)" : "var(--color-line)";
       v.exitColor = st.exitArmed ? "#fff" : "var(--color-muted-strong)";
       const cid = st.commishId;
+      const staleCount = st.players.filter((p) => p.stale && !p.demo).length;
       v.lobbyPlayers = st.players.map((p) => ({
-        name: p.name, tag: p.id === cid ? "Remote" : "",
+        name: p.name,
+        // Out of date outranks Remote: it is the one that needs doing something
+        // about, and it needs doing before kickoff.
+        tag: (p.stale && !p.demo) ? "Out of date" : p.id === cid ? "Remote" : "",
+        tagColor: (p.stale && !p.demo) ? "var(--color-penalty)" : "var(--color-accent-300)",
         onTap: () => this.setCommish(p.id),
         bg: p.id === cid ? "color-mix(in srgb,var(--color-accent) 16%,transparent)" : "var(--color-surface)",
         border: p.id === cid ? "var(--color-accent)" : "var(--color-line)",
@@ -2714,6 +2786,11 @@ class Component extends DCLogic {
       v.tvStartColor = st.startArmed ? "var(--color-penalty-deep)" : "#fff";
       // Named on the TV so the room can see who is still out, not just a count.
       v.rosterNoteColor = tvShort ? "var(--color-penalty)" : "var(--color-accent-300)";
+      // Named in the lobby, because the fix is "go tell them to reload" and
+      // that only works while everyone is still standing around.
+      v.staleNote = staleCount
+        ? `${staleCount} ${staleCount === 1 ? "phone is" : "phones are"} on an old version \u00b7 ask them to reload`
+        : "";
       v.rosterNote = !st.players.length ? "Waiting on the first check-in."
         : !tvShort ? "Everybody is in."
         : `${MAX_PLAYERS - st.players.length} still to check in.`;

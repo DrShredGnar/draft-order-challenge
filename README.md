@@ -120,9 +120,22 @@ python3 build.py           # rebuild index.html from src/
 python3 build.py --check   # rebuild in memory, diff against committed index.html
 ```
 
-`build.py` substitutes `league_pool.json` into the template at the
-`{{__LEAGUE_POOL__}}` marker, so the generated blob never lands in the
-authored source. With that file absent the build still succeeds and the game
+`build.py` substitutes two things into the template. `league_pool.json` goes
+in at the `{{__LEAGUE_POOL__}}` marker, so the generated blob never lands in
+the authored source. `{{__BUILD_ID__}}` gets a short **content hash** of every
+input to the bundle.
+
+That id exists because a phone can silently run last week's code. Pages serves
+`index.html` with `cache-control: max-age=600`, eleven people load the URL off
+one text message, and a backgrounded mobile tab keeps its copy longer than
+that — this has already happened once, through a whole reveal, with nothing on
+either device able to notice. The host now stamps every snapshot with its id,
+a phone that disagrees says so and offers a reload, and the lobby names who is
+out of date while the room is still standing around and can fix it.
+
+The hash is deterministic on purpose: the same sources must produce the same
+id or `--check` could never compare a rebuild against the committed file. It
+is computed *before* substitution, since the id cannot be an input to itself. With that file absent the build still succeeds and the game
 falls back to three general questions per tier — but a *malformed* seal is a
 hard error, because a silently empty pool looks exactly like a working game
 until the night it matters.

@@ -15,6 +15,7 @@ the shell, the four data tags, and each asset's decompressed content.
 """
 import base64
 import gzip
+import hashlib
 import json
 import pathlib
 import re
@@ -27,6 +28,7 @@ OUT = ROOT / "index.html"
 TAG_SEP = "\n\n  "
 PLACEHOLDER = "{{__BUNDLER_TAGS__}}"
 LEAGUE_MARKER = "{{__LEAGUE_POOL__}}"
+BUILD_MARKER = "{{__BUILD_ID__}}"
 
 
 def gz(data: bytes) -> bytes:
@@ -78,18 +80,52 @@ def league_pool() -> str:
     return sealed
 
 
+def build_id() -> str:
+    """A short, DETERMINISTIC fingerprint of everything that goes in the page.
+
+    It exists so a phone can tell that it is running a different build from
+    the TV. Eleven people load this URL off a text message within a couple of
+    minutes of each other, GitHub Pages serves index.html with
+    `cache-control: max-age=600`, and a backgrounded mobile tab can hold a
+    copy for longer than that — so one player quietly running last week's
+    bundle is a normal Tuesday, not a freak event. Without a stamp there is
+    nothing on either side that can notice.
+
+    Content-hashed rather than timestamped, and that is load-bearing: the
+    same sources must produce the same id, or `--check` could never compare a
+    rebuild against the committed file. It also means the id moves exactly
+    when the bundle actually changes, which is the only time anyone should be
+    asked to refresh.
+
+    Hashed BEFORE the marker is substituted, because the id cannot be an
+    input to itself.
+    """
+    h = hashlib.sha256()
+    h.update((SRC / "template.html").read_bytes())
+    h.update((SRC / "shell.html").read_bytes())
+    h.update(league_pool().encode())
+    for a in sorted(json.loads((SRC / "assets.json").read_text()), key=lambda a: a["uuid"]):
+        h.update(a["uuid"].encode())
+        h.update((SRC / "vendor" / a["file"]).read_bytes())
+    return h.hexdigest()[:8]
+
+
 def rendered_template() -> str:
-    """src/template.html with the league pool substituted in.
+    """src/template.html with the league pool and build id substituted in.
 
     The pool is injected at build time rather than written into template.html
     so that the authored file stays authored: a generated 32KB base64 line
     committed into the middle of the app source would make every regeneration
-    look like a source change in review.
+    look like a source change in review. The build id is injected for the
+    same reason plus a harder one — it is a hash of this very file, so it
+    cannot be written here at all.
     """
     text = (SRC / "template.html").read_text()
     if LEAGUE_MARKER not in text:
         sys.exit("src/template.html has lost its %s marker" % LEAGUE_MARKER)
-    return text.replace(LEAGUE_MARKER, league_pool())
+    if BUILD_MARKER not in text:
+        sys.exit("src/template.html has lost its %s marker" % BUILD_MARKER)
+    return text.replace(LEAGUE_MARKER, league_pool()).replace(BUILD_MARKER, build_id())
 
 
 def build() -> str:
