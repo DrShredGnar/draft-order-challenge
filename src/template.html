@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<html><head>
+<html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>League of Ordinary Gentlemen — Draft Order Challenge</title>
 <meta name="description" content="Twelve questions of football trivia decide the draft order. Winner takes first pick.">
-<meta name="theme-color" content="#161826">
+<!-- Must track --color-bg in the Draft Night block below. It shipped as the
+     superseded Nocturne ground (#161826) for as long as that block existed,
+     so the browser chrome painted a colour the app had already stopped using. -->
+<meta name="theme-color" content="#0a0c14">
 <meta property="og:title" content="League of Ordinary Gentlemen — Draft Order Challenge">
 <meta property="og:description" content="Twelve questions of football trivia decide the draft order. Winner takes first pick.">
 <script src="4882ea57-300d-4157-9920-b486a1b0d129"></script>
@@ -12,7 +15,9 @@
 <body>
 <x-dc>
 <helmet>
-<style>/* Nocturne — design-system tokens and component classes. This file is the source of truth for the system's look; retune it here and see readme.md. */
+<style>/* Draft Night Broadcast — the webfonts. Everything else the app paints
+   lives in the second <style> block below; this one exists only so the faces
+   are declared before the first rule that asks for them. */
 /* ── Draft Night Broadcast typefaces ───────────────────────────────────────
    Barlow Condensed is the chyron letterform (display, eyebrows, big numerals);
    JetBrains Mono is everything read under the clock (body, tables, scores).
@@ -65,297 +70,6 @@
 }
 
 
-:root {
-  --color-bg: #161826;
-  --color-surface: #232532;
-  --color-text: #e9e9ed;
-  --color-accent: #9184d9; /* review round 7 (Barron): the accent moves to
-     the product's blurple — OKLCH hue 289.2, the hue of the app's own Pro
-     accent (#9a8fe0, --om-accent-pro) — at the same lightness the steel
-     accent held (L 0.660, so the documented ratios survive) and chroma
-     in the product blurple's own range (its token sits at C 0.118; the
-     accent takes 0.125, from the old steel's 0.030):
-     the accent now reads as an accent rather than another neutral. */
-  --color-accent-2: #a7a1db; /* the machine-derived stand-in follows: same
-     hue, same L 0.734, chroma at the same 2:3 proportion it held */
-  --color-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
-
-  /* Tonal ramps — generated in OKLCH on one shared lightness scale, so the
-     same step of any role matches the others in visual value. */
-  --color-neutral-100: #f3f5fe;
-  --color-neutral-200: #e4e7f5;
-  --color-neutral-300: #cfd3e5;
-  --color-neutral-400: #b2b6ca;
-  --color-neutral-500: #9397ab;
-  --color-neutral-600: #75798c;
-  --color-neutral-700: #595d6c;
-  --color-neutral-800: #3f424d;
-  --color-neutral-900: #292b31;
-
-  --color-accent-100: #f5f4ff;
-  --color-accent-200: #e7e5fe;
-  --color-accent-300: #d2cefd;
-  --color-accent-400: #b5abfc;
-  --color-accent-500: #968ae0;
-  --color-accent-600: #796cbf;
-  --color-accent-700: #5d5294;
-  --color-accent-800: #423a6a;
-  --color-accent-900: #2b2741;
-
-  --color-accent-2-100: #f5f4ff;
-  --color-accent-2-200: #e7e5fe;
-  --color-accent-2-300: #d2cefd;
-  --color-accent-2-400: #b5afe8;
-  --color-accent-2-500: #9690c9;
-  --color-accent-2-600: #7972a9;
-  --color-accent-2-700: #5c5783;
-  --color-accent-2-800: #423e5d;
-  --color-accent-2-900: #2b293a;
-
-  /* Deck section-divider ground — review round 3: saturation as presence.
-     Dividers take a saturated deep indigo (hue 277, the neutral ramp's own
-     family; C 0.094 — written when the accent held C 0.030, before the
-     round-7 blurple raised it past the ground's) with a lighter bloom and
-     a ghost tint of the same hue, while the slide grounds stay
-     desaturated. Deck-scale fills only — not interface colors. */
-  --color-section: #262a60;
-  --color-section-glow: #353b80;
-  --color-section-ghost: #4c5397;
-
-  --font-heading: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
-  --font-heading-weight: 500;
-  --font-body: "JetBrains Mono", ui-monospace, monospace;
-
-  --space-1: 2.8px;
-  --space-2: 5.6px;
-  --space-3: 8.4px;
-  --space-4: 11.2px;
-  --space-6: 16.8px;
-  --space-8: 22.4px;
-
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 14px;
-
-  /* Elevation — derived from the ground: soft ink-tinted shadows on a
-     light theme, a hairline edge + ambient darkness on a dark one. */
-  --shadow-sm: 0 0 0 1px #3f424d;
-  --shadow-md: 0 0 0 1px #595d6c, 0 6px 18px rgba(0,0,0,0.55);
-  --shadow-lg: 0 0 0 1px #9397ab, 0 16px 40px rgba(0,0,0,0.65);
-}
-
-body {
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-body);
-}
-h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); }
-
-.lighten{mix-blend-mode:lighten;background-color:transparent}
-
-/* ══════════════════════════════════════════════════════════════════════════
-   Components — built with the tokens above. Plain CSS
-   on plain HTML: no JavaScript, no build step. Each class is documented in
-   readme.md and demonstrated in foundations/ and components/.
-   ══════════════════════════════════════════════════════════════════════ */
-
-*, *::before, *::after { box-sizing: border-box; }
-body { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 400; }
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
-  line-height: 1.12; letter-spacing: -0.015em; margin: 0 0 var(--space-2);
-}
-h1 { font-size: 42px; }
-h2 { font-size: 32px; }
-h3 { font-size: 25px; }
-h4 { font-size: 20px; }
-h5 { font-size: 16px; }
-h6 { font-size: 13px; }
-h6 { letter-spacing: 0.08em; text-transform: uppercase; }
-p { margin: 0 0 var(--space-3); }
-a { color: var(--color-accent); text-underline-offset: 3px; }
-img { display: block; max-width: 100%; }
-figure { margin: 0; }
-figcaption {
-  font-size: 11px; margin-top: var(--space-1);
-  color: color-mix(in srgb, var(--color-text) 55%, transparent);
-}
-.text-muted { color: color-mix(in srgb, var(--color-text) 55%, transparent); }
-:focus { outline: none; }
-:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
-::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); }
-
-/* — rules — */
-/* Rules fade to transparent at both ends instead of stopping cleanly — a
-   Nocturne signature. The ramp is 48px an end (one deck baseline unit),
-   painted from the same divider token. Freestanding rules fade; box
-   outlines, in-control separators, and short accent marks stay solid. */
-.hr {
-  height: 1px; border: 0; margin: var(--space-4) 0;
-  background: linear-gradient(to right,
-    transparent, var(--color-divider) 48px,
-    var(--color-divider) calc(100% - 48px), transparent);
-}
-
-/* — buttons — */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  cursor: pointer; text-decoration: none;
-  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
-  font-size: 14px; line-height: 1.2; color: var(--color-text); /* matches the .input's 14px —
-     the pair sits side by side in sign-up rows */
-  background: transparent; border: 1px solid transparent;
-  padding: var(--space-2) calc(var(--space-3) * 1.2);
-  border-radius: var(--radius-md);
-}
-.btn svg { display: block; }
-.btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn-primary { color: var(--color-accent); border-color: var(--color-accent); }
-.btn-primary:hover { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
-.btn-primary:active { background: color-mix(in srgb, var(--color-accent) 22%, transparent); }
-.btn-secondary { border-color: var(--color-divider); }
-.btn-secondary:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
-.btn-secondary:active { background: color-mix(in srgb, var(--color-text) 14%, transparent); }
-.btn-ghost { color: var(--color-accent); padding-inline: var(--space-1); }
-.btn-ghost:hover { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
-.btn-ghost:active { background: color-mix(in srgb, var(--color-accent) 18%, transparent); }
-.btn-icon { width: 36px; height: 36px; padding: 0; }
-.btn-block { width: 100%; margin-top: var(--space-2); }
-
-/* — forms — */
-.field > label {
-  display: block; font-size: 12px; margin-bottom: 5px;
-  color: color-mix(in srgb, var(--color-text) 70%, transparent);
-}
-.input {
-  width: 100%; min-height: 36px; padding: 6px 10px; font: inherit;
-  font-size: 14px; color: var(--color-text); caret-color: var(--color-accent);
-  background: var(--color-surface);
-  border: 1px solid var(--color-divider); border-radius: var(--radius-md);
-}
-.input:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
-.input:focus-visible { border-color: var(--color-accent); outline-offset: 0; }
-textarea.input { min-height: 90px; resize: vertical; }
-.radio { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; }
-.radio input, .seg-opt input {
-  position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;
-}
-.radio .dot {
-  width: 16px; height: 16px; flex: none; border-radius: 50%;
-  border: 1.5px solid var(--color-divider);
-}
-.radio:hover .dot { border-color: var(--color-accent); }
-.radio input:checked + .dot {
-  border-color: var(--color-accent); background: var(--color-accent);
-  box-shadow: inset 0 0 0 4px var(--color-bg);
-}
-.radio input:focus-visible + .dot { outline: 2px solid var(--color-accent); outline-offset: 2px; }
-.seg {
-  display: inline-flex; overflow: hidden;
-  border: 1px solid var(--color-divider); border-radius: var(--radius-md);
-}
-.seg-opt {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 12px; font-size: 13px; cursor: pointer;
-}
-.seg-opt + .seg-opt { border-left: 1px solid var(--color-divider); }
-.seg-opt:has(input:checked) { color: var(--color-accent); box-shadow: inset 0 0 0 1px var(--color-accent); }
-.seg-opt:not(:has(input:checked)):hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
-.seg-opt:has(input:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: -2px; }
-
-/* — cards — */
-.card {
-  display: flex; flex-direction: column; gap: var(--space-2);
-  padding: var(--space-3); border-radius: var(--radius-md); background: var(--color-surface);
-}
-.card-kicker { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent); }
-.card-title {
-  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
-  font-size: 17px; line-height: 1.2;
-}
-.card-body { margin: 0; font-size: 13px; opacity: 0.8; flex: 1; }
-.card-meta {
-  display: flex; align-items: center; gap: 6px; font-size: 11px;
-  color: color-mix(in srgb, var(--color-text) 50%, transparent);
-}
-.elev-sm { box-shadow: var(--shadow-sm); }
-.elev-md { box-shadow: var(--shadow-md); }
-.elev-lg { box-shadow: var(--shadow-lg); }
-
-/* — tags — */
-.tag {
-  display: inline-flex; align-items: center; font-size: 11px;
-  letter-spacing: 0.02em; padding: 3px 10px;
-  border-radius: calc(var(--radius-md) * 0.75);
-}
-.tag-accent { background: var(--color-accent-800); color: var(--color-accent-100); }
-.tag-accent-2 { background: var(--color-accent-2-800); color: var(--color-accent-2-100); }
-.tag-neutral { background: var(--color-line); color: var(--color-neutral-100); }
-.tag-outline { border: 1px solid var(--color-accent); color: var(--color-accent); }
-
-/* — navigation — */
-.nav {
-  display: flex; align-items: center; gap: var(--space-4);
-  padding: var(--space-3) var(--space-4);
-  border-bottom: none;
-}
-.nav-brand {
-  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
-  font-size: 18px; margin-right: auto;
-}
-.nav a { color: inherit; text-decoration: none; font-size: 14px; }
-.nav a:hover, .nav a[aria-current='page'] { color: var(--color-accent); }
-
-/* — tables — */
-.table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.table th {
-  text-align: left; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
-  color: color-mix(in srgb, var(--color-text) 60%, transparent);
-  padding: var(--space-2); border-bottom: 1px solid transparent; /* keeps layout; the row paints the fading rule */
-}
-.table td {
-  padding: var(--space-2);
-  border-bottom: 1px solid transparent;
-}
-/* Row rules as row-level strips so the end-fade spans the row, not each cell. */
-.table thead tr {
-  background: linear-gradient(to right,
-    transparent, var(--color-divider) 48px,
-    var(--color-divider) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px;
-}
-.table tbody tr {
-  background: linear-gradient(to right,
-    transparent, color-mix(in srgb, var(--color-text) 8%, transparent) 48px,
-    color-mix(in srgb, var(--color-text) 8%, transparent) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px;
-}
-.table tbody tr:hover {
-  /* the hover tint layers over the row rule, which keeps painting */
-  background:
-    linear-gradient(color-mix(in srgb, var(--color-text) 4%, transparent),
-                    color-mix(in srgb, var(--color-text) 4%, transparent)) no-repeat 0 0 / 100% 100%,
-    linear-gradient(to right,
-      transparent, color-mix(in srgb, var(--color-text) 8%, transparent) 48px,
-      color-mix(in srgb, var(--color-text) 8%, transparent) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px;
-}
-
-/* — dialog — */
-.dialog-backdrop {
-  position: fixed; inset: 0; display: grid; place-items: center;
-  padding: var(--space-4);
-  background: color-mix(in srgb, var(--color-neutral-900) 50%, transparent);
-}
-.dialog {
-  width: min(440px, 100%); display: flex; flex-direction: column; gap: var(--space-3);
-  padding: var(--space-4); border-radius: var(--radius-lg);
-  background: var(--color-surface); box-shadow: var(--shadow-lg);
-}
-.dialog-title {
-  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
-  font-size: 20px;
-}
-.dialog-body { font-size: 14px; opacity: 0.85; }
-.dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); }
-
 </style>
 <script src="8dd7a116-12ca-4e2c-a1ad-4555d932be01"></script>
 <script src="d2d97104-fefd-4fe3-b506-701516a3327e"></script>
@@ -363,9 +77,13 @@ textarea.input { min-height: 90px; resize: vertical; }
 <style>
 /* ══════════════════════════════════════════════════════════════════════════
    DRAFT NIGHT BROADCAST — the league's design system, applied to the game.
-   Source of truth: DESIGN.md in the war-room repo. This block overrides the
-   generic Nocturne tokens above so the game reads as the same broadcast as
-   /draft, /recap and /slots rather than as a separate product.
+   Source of truth: DESIGN.md in the war-room repo. This is now the ONLY token
+   block in the file: the generic Nocturne scaffold it used to override was
+   deleted, because ~290 lines of another product's buttons, cards, dialogs
+   and tonal ramps were still being served to twelve phones to style exactly
+   one button. Only two things in it were load-bearing — the box-sizing reset
+   (restored below) and `.btn-primary` on the pool Back button (hand-styled
+   like every other control in the app now).
 
    The one colour rule everything else follows:
      RED  = live. The play clock, the ON AIR dot, the kickoff button. Nothing
@@ -383,9 +101,28 @@ textarea.input { min-height: 90px; resize: vertical; }
   --color-line:#1e2d44;
   --color-divider:#1e2d44;
 
-  /* — ink — */
+  /* — ink —
+       Three steps, and only three. The markup used to paint quiet text with
+       ad-hoc `color-mix(var(--color-text) 38-45%, transparent)`, which lands
+       between 3.15:1 and 3.99:1 on these grounds — under the 4.5:1 floor for
+       anything below 18.66px — in 27 declarations. --color-muted was sitting
+       right here at 6.72:1 the whole time and was used eight times.
+
+       Every value below is measured against --color-panel2, the LIGHTEST
+       ground any of them is allowed on, so a caption cannot start failing
+       just because it moved from the page to a card:
+         --color-muted        6.72 / 6.05 / 5.48   (bg / surface / panel2)
+         --color-muted-strong 9.44 / 8.50 / 7.74
+       --color-muted is the floor. There is deliberately nothing quieter: a
+       third, dimmer step is what the color-mix ladder was, and it cannot be
+       made to pass. Quiet is now expressed by size and weight, not opacity.
+
+       The ladder had eleven text alphas between 30% and 72%. Eleven steps is
+       not a hierarchy, it is eleven separate decisions — so they collapse to
+       these two. Nothing got dimmer in the trade. */
   --color-text:#f0ecdf;
   --color-muted:#8898b8;
+  --color-muted-strong:#a9b6cd;
 
   /* — accent = field green. Points, correct answers, presence. — */
   --color-accent:#2fa862;
@@ -418,6 +155,18 @@ textarea.input { min-height: 90px; resize: vertical; }
   --tier-hard:#c86020;    /* TE  */
   --tier-brutal:#e84530;  /* QB  */
 
+  /* Tier TEXT tokens, same split --color-onair/--onair-ink already uses.
+     All four base hues clear 4.5:1 on --color-bg, so the tier chips on the
+     game screens are fine — but on --color-surface, where the pool cards
+     sit, TE lands at 4.31 and QB at 4.46 and both miss. Easy and Medium
+     alias their base value so every consumer can reach for `-ink` without
+     having to know which two were the problem.
+       easy 7.92 · medium 10.64 · hard 5.30 · brutal 5.58  (on --color-surface) */
+  --tier-easy-ink:#7ec028;
+  --tier-medium-ink:#e8c820;
+  --tier-hard-ink:#d4702e;
+  --tier-brutal-ink:#ee6248;
+
   /* — typography — */
   --font-heading:"Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
   --font-body:"JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
@@ -427,10 +176,36 @@ textarea.input { min-height: 90px; resize: vertical; }
   --radius-md:3px;
   --radius-lg:4px;
 
+  /* — edges —
+       --color-line-strong is the muted border that was hard-coded as
+       var(--color-line-strong) in ten places: inputs, secondary buttons, the host answer
+       rail, the not-you roster rail. Same value, one name.
+
+       --color-line-control is brighter on purpose and is used in exactly one
+       situation: where a border is the ONLY thing telling you a control is
+       there. The join inputs sit on --color-surface, which is 1.11:1 against
+       the page — so the box was being drawn entirely by a 1.60:1 edge, and
+       WCAG 1.4.11 wants 3:1 for anything that identifies a component. This
+       measures 3.98 / 3.69 / 3.27. Do not spread it to decorative borders;
+       the quiet edge everywhere else is the look, not an oversight. */
+  --color-line-strong:#2b3d59;
+  --color-line-control:#5a7296;
+
+  /* Paired states that had no names: the idle play-clock border (the resting
+     half of --color-onair), the inert draft row, and the kickoff hover. */
+  --color-clock-idle:#3a1620;
+  --color-row-inert:#161c2b;
+  --color-onair-hot:#ee2020;
+
   --shadow-sm:0 0 0 1px var(--color-line);
   --shadow-md:0 0 0 1px var(--color-line), 0 6px 18px rgba(0,0,0,.55);
-  --shadow-lg:0 0 0 1px #2b3d59, 0 16px 40px rgba(0,0,0,.7);
+  --shadow-lg:0 0 0 1px var(--color-line-strong), 0 16px 40px rgba(0,0,0,.7);
 }
+
+/* Restored from the deleted Nocturne block, where it was the one rule the
+   whole app actually depended on. Every screen root sets box-sizing inline
+   as well; the layouts underneath them do not. */
+*,*::before,*::after{box-sizing:border-box}
 
 /* Condensed caps are the house voice for anything that would be shouted by a
    graphics operator: hero names, page titles, big numerals. Barlow Condensed
@@ -838,7 +613,7 @@ p{letter-spacing:.005em}
 
 
 <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
-<div style="max-width:1060px;margin:0 auto;padding:max(44px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-left)) 52px;display:flex;flex-direction:column;gap:clamp(24px,5vw,38px);box-sizing:border-box">
+<main style="max-width:1060px;margin:0 auto;padding:max(44px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-left)) 52px;display:flex;flex-direction:column;gap:clamp(24px,5vw,38px);box-sizing:border-box">
   <div style="display:flex;flex-direction:column;gap:14px">
     <div class="chyron-eyebrow" style="font-size:14px">League of Ordinary Gentlemen · Draft Day</div>
     <!-- Chyron hero: red position tab on the left edge, condensed 800 caps
@@ -874,37 +649,54 @@ p{letter-spacing:.005em}
       <span style="font-size:12.5px;line-height:1.45;color:var(--color-muted)">Counts and rules only. No answers shown.</span>
     </button>
   </div>
-  <div style="font-size:12px;color:color-mix(in srgb,var(--color-text) 42%,transparent);border-top:1px solid var(--color-divider);padding-top:16px">Realtime: {{ rtLabel }}</div>
-</div>
+  <!-- A host session survives a stray Exit, a refresh, or a crashed tab.
+       Only offered on the device that was hosting, and only for two hours. -->
+  <sc-if value="{{ hasResume }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:16px 18px;border-radius:var(--radius-md);background:color-mix(in srgb,var(--color-accent) 9%,transparent);border:1px solid var(--color-accent-700)">
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+      <span style="font:italic 700 13px/1 var(--font-heading);letter-spacing:.18em;text-transform:uppercase;color:var(--color-accent-300)">Game in progress</span>
+      <span style="font-size:13px;color:var(--color-muted-strong)">{{ resumeNote }}</span>
+    </div>
+    <button sc-camel-on-click="{{ resumeHost }}" style="flex:none;cursor:pointer;min-height:52px;padding:0 22px;border-radius:var(--radius-md);border:1px solid var(--color-accent);background:transparent;color:var(--color-accent-200);font-family:var(--font-heading);font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap" style-hover="background:color-mix(in srgb,var(--color-accent) 16%,transparent)">{{ resumeLabel }}</button>
+  </div>
+  </sc-if>
+  <div style="font-size:12px;color:var(--color-muted);border-top:1px solid var(--color-divider);padding-top:16px">Realtime: {{ rtLabel }}</div>
+</main>
 </sc-if>
 
 <sc-if value="{{ isPool }}">
-<div style="max-width:820px;margin:0 auto;padding:56px 32px 80px;display:flex;flex-direction:column;gap:28px">
+<!-- This was the one screen root with no safe-area insets — a fixed 32px
+     gutter that ran under the notch and the home indicator. -->
+<main style="max-width:820px;margin:0 auto;padding:max(56px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(80px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left));display:flex;flex-direction:column;gap:28px;box-sizing:border-box">
   <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap">
     <div>
       <div style="font:italic 700 14px/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:var(--color-accent-400);margin-bottom:10px">Sealed pool</div>
-      <h2 style="margin:0;font-size:34px;letter-spacing:.005em">Nobody sees these first.</h2>
+      <h1 style="margin:0;font-size:34px;letter-spacing:.005em">Nobody sees these first.</h1>
     </div>
-    <button sc-camel-on-click="{{ goHome }}" class="btn btn-primary" style="cursor:pointer">Back</button>
+    <!-- Was `class="btn btn-primary"` — the only survivor of the deleted
+         Nocturne scaffold, and the only 8px-radius control in a 2-3px app.
+         Hand-styled to match the other secondary buttons, and sized to 44px
+         so it clears the touch-target floor. -->
+    <button sc-camel-on-click="{{ goHome }}" style="cursor:pointer;min-height:44px;padding:0 20px;border-radius:var(--radius-md);border:1px solid var(--color-accent);background:transparent;color:var(--color-accent-200);font-family:var(--font-heading);font-size:19px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap" style-hover="background:color-mix(in srgb,var(--color-accent) 16%,transparent)">Back</button>
   </div>
-  <p style="margin:0;max-width:58ch;font-size:15px;color:color-mix(in srgb,var(--color-text) 62%,transparent);text-wrap:pretty">At kickoff the app draws three questions per tier at random and shuffles the four options on each. One of every three comes from this league's own history — the 2024 and 2025 drafts, both title games, every weekly score. The draw happens on the host device the moment the game starts, so the commissioner is playing the same unseen set as the other eleven.</p>
+  <p style="margin:0;max-width:58ch;font-size:15px;color:var(--color-muted-strong);text-wrap:pretty">At kickoff the app draws three questions per tier at random and shuffles the four options on each. One of every three comes from this league's own history — the 2024 and 2025 drafts, both title games, every weekly score. The draw happens on the host device the moment the game starts, so the commissioner is playing the same unseen set as the other eleven.</p>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px">
     <sc-for list="{{ poolRows }}" as="t" hint-placeholder-count="4">
       <div style="background:var(--color-surface);border:1px solid var(--color-line);border-radius:var(--radius-lg);padding:18px;display:flex;flex-direction:column;gap:6px">
-        <span style="font:italic 700 14px/1 var(--font-heading);letter-spacing:.16em;text-transform:uppercase;color:{{ t.fg }}">{{ t.label }}</span>
+        <span style="font:italic 700 14px/1 var(--font-heading);letter-spacing:.16em;text-transform:uppercase;color:{{ t.ink }}">{{ t.label }}</span>
         <span style="font-family:var(--font-heading);font-size:49px;font-weight:800;letter-spacing:.005em;font-variant-numeric:tabular-nums">{{ t.count }}</span>
-        <span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 50%,transparent)">in pool · {{ t.house }} from league history · 3 drawn · {{ t.points }}pt each</span>
+        <span style="font-size:12px;color:var(--color-muted)">in pool · {{ t.house }} from league history · 3 drawn · {{ t.points }}pt each</span>
       </div>
     </sc-for>
   </div>
-</div>
+</main>
 </sc-if>
 
 <sc-if value="{{ isJoin }}">
-<div style="min-height:var(--app-h);display:flex;flex-direction:column;justify-content:center;gap:22px;padding:max(28px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-left)) max(28px,env(safe-area-inset-bottom));max-width:440px;margin:0 auto;box-sizing:border-box">
+<main style="min-height:var(--app-h);display:flex;flex-direction:column;justify-content:center;gap:22px;padding:max(28px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-left)) max(28px,env(safe-area-inset-bottom));max-width:440px;margin:0 auto;box-sizing:border-box">
   <div>
     <div style="font:italic 700 14px/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:var(--color-accent-400);margin-bottom:10px">League of Ordinary Gentlemen</div>
-    <h2 style="margin:0;font-size:38px;letter-spacing:.005em">Get in the draft.</h2>
+    <h1 style="margin:0;font-size:38px;letter-spacing:.005em">Get in the draft.</h1>
   </div>
   <sc-if value="{{ hasQuick }}" hint-placeholder-val="{{ false }}">
   <div style="display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:var(--radius-md);background:color-mix(in srgb,var(--color-accent) 10%,transparent);border:1px solid var(--color-accent-700)">
@@ -912,65 +704,101 @@ p{letter-spacing:.005em}
     <button sc-camel-on-click="{{ quickJoin }}" style="cursor:pointer;min-height:64px;border-radius:var(--radius-md);border:1px solid var(--color-accent);background:color-mix(in srgb,var(--color-accent) 18%,transparent);color:var(--color-accent-100);font-family:var(--font-heading);font-size:29px;font-weight:800;transition:transform .08s ease" style-active="transform:scale(.985)">{{ quickLabel }}</button>
   </div>
   </sc-if>
+  <!-- The labels were visual only: no `for`, no wrapping, so input.labels was
+       empty and a screen reader announced two unnamed text fields. -->
   <div style="display:flex;flex-direction:column;gap:8px">
-    <label style="font:italic 700 15px/1 var(--font-heading);letter-spacing:.14em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent)">Room code</label>
-    <input value="{{ joinCode }}" sc-camel-on-change="{{ onJoinCode }}" sc-camel-max-length="4" placeholder="ABCD" sc-camel-auto-capitalize="characters" sc-camel-auto-correct="off" sc-camel-auto-complete="off" sc-camel-spell-check="{{ false }}" sc-camel-input-mode="text" sc-camel-enter-key-hint="next" style="font-family:var(--font-heading);font-size:55px;font-weight:800;letter-spacing:.3em;text-align:center;text-transform:uppercase;padding:16px;border-radius:var(--radius-md);border:1px solid #2b3d59;background:var(--color-surface);color:var(--color-text)">
+    <label for="join-code" style="font:italic 700 15px/1 var(--font-heading);letter-spacing:.14em;text-transform:uppercase;color:var(--color-muted-strong)">Room code</label>
+    <input id="join-code" value="{{ joinCode }}" sc-camel-on-change="{{ onJoinCode }}" sc-camel-on-key-down="{{ onJoinKey }}" sc-camel-max-length="4" placeholder="ABCD" sc-camel-auto-capitalize="characters" sc-camel-auto-correct="off" sc-camel-auto-complete="off" sc-camel-spell-check="{{ false }}" sc-camel-input-mode="text" sc-camel-enter-key-hint="next" aria-describedby="join-code-hint" style="font-family:var(--font-heading);font-size:55px;font-weight:800;letter-spacing:.3em;text-align:center;text-transform:uppercase;padding:16px;border-radius:var(--radius-md);border:1px solid var(--color-line-control);background:var(--color-surface);color:var(--color-text)">
+    <!-- Codes are minted from a 24-letter alphabet with I and O held out so
+         they cannot be confused with 1 and 0 across a room. The input used to
+         accept all 26, so "IOWA" was a well-formed code that could never
+         match a room and nothing said why. -->
+    <div id="join-code-hint" style="font-size:12px;color:var(--color-muted)">Four letters off the TV. Codes never use I or O.</div>
   </div>
   <div style="display:flex;flex-direction:column;gap:8px">
-    <label style="font:italic 700 15px/1 var(--font-heading);letter-spacing:.14em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent)">Your name</label>
-    <input value="{{ joinName }}" sc-camel-on-change="{{ onJoinName }}" placeholder="Gentleman" sc-camel-auto-capitalize="words" sc-camel-auto-correct="off" sc-camel-auto-complete="name" sc-camel-enter-key-hint="go" style="font-size:21px;padding:15px;border-radius:var(--radius-md);border:1px solid #2b3d59;background:var(--color-surface);color:var(--color-text)">
+    <label for="join-name" style="font:italic 700 15px/1 var(--font-heading);letter-spacing:.14em;text-transform:uppercase;color:var(--color-muted-strong)">Your name</label>
+    <input id="join-name" value="{{ joinName }}" sc-camel-on-change="{{ onJoinName }}" sc-camel-on-key-down="{{ onJoinKey }}" placeholder="Gentleman" sc-camel-auto-capitalize="words" sc-camel-auto-correct="off" sc-camel-auto-complete="name" sc-camel-enter-key-hint="go" style="font-size:21px;padding:15px;border-radius:var(--radius-md);border:1px solid var(--color-line-control);background:var(--color-surface);color:var(--color-text)">
   </div>
   <button sc-camel-on-click="{{ submitJoin }}" style="cursor:pointer;min-height:64px;border-radius:var(--radius-md);border:1px solid var(--color-accent);background:transparent;color:var(--color-accent-200);font-family:var(--font-heading);font-size:26px;font-weight:800;transition:transform .08s ease" style-active="transform:scale(.985)" style-hover="background:color-mix(in srgb,var(--color-accent) 16%,transparent)">Join room</button>
-  <div style="font-size:13px;min-height:20px;color:{{ joinNoteColor }}">{{ joinNote }}</div>
-  <button sc-camel-on-click="{{ goHome }}" style="cursor:pointer;background:none;border:none;color:color-mix(in srgb,var(--color-text) 45%,transparent);font-size:13px;text-decoration:underline;text-underline-offset:3px">Back</button>
-</div>
+  <!-- assertive, not polite: this fires in response to the player pressing
+       Join, and it is the only thing standing between them and the game. -->
+  <div role="alert" aria-live="assertive" style="font-size:13px;min-height:20px;color:{{ joinNoteColor }}">{{ joinNote }}</div>
+  <button sc-camel-on-click="{{ goHome }}" style="cursor:pointer;background:none;border:none;min-height:44px;padding:0 12px;align-self:center;color:var(--color-muted);font-size:13px;text-decoration:underline;text-underline-offset:3px">Back</button>
+</main>
 </sc-if>
 
 <sc-if value="{{ isPlayer }}">
-<div style="height:var(--app-h);overflow:hidden;max-width:560px;margin:0 auto;display:flex;flex-direction:column;padding:max(12px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));gap:12px;box-sizing:border-box">
+<!-- `overflow-y:auto` is the fix for a real trap, not a precaution. The
+     column is exactly one viewport tall with `overflow:hidden`, the question
+     is `flex:none` so it never yields, and the option grid has a hard floor
+     of 4x52 + 3x9 = 235px. In portrait that fits everywhere. In landscape —
+     a phone lying on a couch with rotation lock off, which is the default
+     draft-night posture — there is not enough room, and options C and D
+     used to render outside the box with no gesture that could reach them.
+     Same failure the host screen already shipped once. -->
+<main style="height:var(--app-h);overflow-y:auto;-webkit-overflow-scrolling:touch;max-width:560px;margin:0 auto;display:flex;flex-direction:column;padding:max(12px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));gap:12px;box-sizing:border-box">
   <div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px">
     <div style="min-width:0;display:flex;align-items:baseline;gap:8px">
-      <span style="min-width:0;font-family:var(--font-heading);font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ myName }}</span>
-      <span style="flex:none;font-size:12px;white-space:nowrap;color:color-mix(in srgb,var(--color-text) 42%,transparent)">room {{ code }}</span>
+      <h1 style="margin:0;min-width:0;font-family:var(--font-heading);font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ myName }}</h1>
+      <span style="flex:none;font-size:12px;white-space:nowrap;color:var(--color-muted)">room {{ code }}</span>
     </div>
     <div style="flex:none;display:flex;align-items:baseline;gap:6px">
       <span style="font-family:var(--font-heading);font-size:31px;font-weight:800;color:var(--color-accent-300);font-variant-numeric:tabular-nums">{{ myScore }}</span>
-      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 42%,transparent)">pts</span>
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-muted)">pts</span>
     </div>
   </div>
 
   <sc-if value="{{ pWaiting }}">
-    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center">
-      <div style="width:10px;height:10px;border-radius:50%;background:var(--color-accent);animation:lofgPulse 1.4s ease-in-out infinite"></div>
-      <div style="font-family:var(--font-heading);font-size:35px;font-weight:800;letter-spacing:.005em">{{ pWaitTitle }}</div>
-      <div style="font-size:14px;max-width:30ch;color:color-mix(in srgb,var(--color-text) 55%,transparent)">{{ pWaitBody }}</div>
+    <div aria-live="polite" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center">
+      <div aria-hidden="true" style="width:10px;height:10px;border-radius:50%;background:{{ pWaitDot }};animation:lofgPulse 1.4s ease-in-out infinite"></div>
+      <div style="font-family:var(--font-heading);font-size:35px;font-weight:800;letter-spacing:.005em;color:{{ pWaitTitleColor }}">{{ pWaitTitle }}</div>
+      <div style="font-size:14px;max-width:30ch;color:var(--color-muted-strong)">{{ pWaitBody }}</div>
+      <!-- The lobby is the only moment all night with unlimited time and
+           everyone's full attention, and it used to teach nothing. -->
+      <sc-if value="{{ pWaitRules }}">
+      <div style="margin-top:2px;font-size:12.5px;line-height:1.6;max-width:32ch;color:var(--color-muted)">{{ pWaitRules }}</div>
+      </sc-if>
+      <sc-if value="{{ pWaitRetry }}">
+      <button sc-camel-on-click="{{ goJoin }}" style="margin-top:4px;cursor:pointer;min-height:52px;padding:0 24px;border-radius:var(--radius-md);border:1px solid var(--color-penalty);background:transparent;color:var(--color-penalty);font-family:var(--font-heading);font-size:21px;font-weight:800;text-transform:uppercase;letter-spacing:.04em">Check the code</button>
+      </sc-if>
     </div>
   </sc-if>
 
   <sc-if value="{{ pQuestion }}">
     <div style="display:flex;flex-direction:column;gap:11px;flex:1;min-height:0">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-        <span style="white-space:nowrap;font:italic 700 14px/1 var(--font-heading);letter-spacing:.16em;text-transform:uppercase;padding:6px 10px;border-radius:var(--radius-sm);border:1px solid {{ tierFg }};color:{{ tierFg }}">{{ tierLabel }} · {{ tierPoints }}pt</span>
-        <span style="font-family:var(--font-heading);font-size:35px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.01em;padding:4px 12px;border-radius:var(--radius-sm);background:var(--color-bg);border:1px solid {{ clockBorder }};color:{{ clockColor }};text-shadow:0 0 14px {{ clockGlow }};animation:{{ clockAnim }}">{{ clock }}</span>
+        <span style="white-space:nowrap;font:italic 700 14px/1 var(--font-heading);letter-spacing:.16em;text-transform:uppercase;padding:6px 10px;border-radius:var(--radius-sm);border:1px solid {{ tierFg }};color:{{ tierInk }}">{{ tierLabel }} · {{ tierPoints }}pt</span>
+        <!-- The clock drops from 35px to 27px. It is still the second-largest
+             thing on the screen and it still carries colour, glow and the
+             yard bar; it just no longer outranks the question, which used to
+             render at 24px — smaller than the player's own score. -->
+        <span role="timer" aria-label="Time remaining" style="font-family:var(--font-heading);font-size:27px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.01em;padding:4px 12px;border-radius:var(--radius-sm);background:var(--color-bg);border:1px solid {{ clockBorder }};color:{{ clockColor }};text-shadow:0 0 14px {{ clockGlow }};animation:{{ clockAnim }}">{{ clock }}</span>
       </div>
-      <div style="position:relative;height:26px;border-radius:var(--radius-sm);overflow:hidden;background:linear-gradient(180deg,var(--color-surface),var(--color-bg));border:1px solid var(--color-line)">
+      <div aria-hidden="true" style="position:relative;height:26px;border-radius:var(--radius-sm);overflow:hidden;background:linear-gradient(180deg,var(--color-surface),var(--color-bg));border:1px solid var(--color-line)">
         <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(90deg,transparent 0,transparent calc(10% - 1px),color-mix(in srgb, var(--color-text) 12%, transparent) calc(10% - 1px),color-mix(in srgb, var(--color-text) 12%, transparent) 10%)"></div>
-        <div style="position:absolute;top:0;bottom:0;left:0;width:{{ clockPct }}%;background:linear-gradient(90deg,color-mix(in srgb,var(--color-accent) 8%,transparent),color-mix(in srgb,var(--color-accent) 28%,transparent));transition:width .9s linear"></div>
-        <svg sc-camel-view-box="0 0 48 30" width="30" height="19" style="position:absolute;top:50%;left:{{ runnerLeft }};transform:translate(-50%,-50%);transition:left .9s linear;animation:lofgBob .42s ease-in-out infinite">
+        <!-- transform:scaleX off a fixed-width track instead of animating
+             `width`: same picture, composited instead of re-laid-out. -->
+        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform-origin:left center;transform:scaleX({{ clockFrac }});will-change:transform;background:linear-gradient(90deg,color-mix(in srgb,var(--color-accent) 8%,transparent),color-mix(in srgb,var(--color-accent) 28%,transparent));transition:transform .9s linear"></div>
+        <svg sc-camel-view-box="0 0 48 30" width="30" height="19" style="position:absolute;top:50%;left:0;transform:translate({{ runnerShift }},-50%);will-change:transform;transition:transform .9s linear;animation:lofgBob .42s ease-in-out infinite">
           <ellipse cx="24" cy="15" rx="22" ry="13" fill="#6b3a1f" stroke="var(--color-accent-100)" stroke-width="2.5"></ellipse>
           <path d="M7 15h8M33 15h8M18 15h12M20 10.5v9M24 10.5v9M28 10.5v9" stroke="var(--color-accent-100)" stroke-width="2.5" stroke-linecap="round"></path>
         </svg>
       </div>
-      <div style="flex:none;font-family:var(--font-heading);font-size:clamp(24px,5.6vw,33px);font-weight:700;line-height:1.1;letter-spacing:.005em;text-wrap:pretty;margin:2px 0">{{ qText }}</div>
-      <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr;grid-auto-rows:minmax(62px,1fr);gap:9px">
+      <!-- The question now leads the type scale on this screen. -->
+      <h2 style="flex:none;margin:0;font-family:var(--font-heading);font-size:clamp(28px,6.6vw,38px);font-weight:700;line-height:1.08;letter-spacing:.005em;text-transform:none;text-wrap:pretty;margin:2px 0">{{ qText }}</h2>
+      <div role="group" aria-label="Answers" style="flex:1;min-height:0;display:grid;grid-template-columns:1fr;grid-auto-rows:minmax(52px,1fr);gap:9px">
         <sc-for list="{{ pOptions }}" as="o" hint-placeholder-count="4">
-          <button sc-camel-on-click="{{ o.onTap }}" style="cursor:pointer;width:100%;min-height:64px;display:flex;align-items:center;gap:13px;text-align:left;padding:10px 14px;border-radius:var(--radius-md);border:1px solid {{ o.border }};border-left:4px solid {{ o.rail }};background:{{ o.bg }};color:{{ o.fg }};transition:transform .08s ease,background .12s ease;-webkit-user-select:none;user-select:none" style-active="transform:scale(.975)">
-            <span style="flex:none;width:38px;height:38px;border-radius:var(--radius-sm);display:grid;place-items:center;background:{{ o.badgeBg }};color:{{ o.badgeFg }};font:800 22px var(--font-heading);box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--color-text) 14%, transparent)">{{ o.letter }}</span>
-            <span style="font-family:var(--font-heading);font-size:clamp(19px,5vw,24px);font-weight:700;text-transform:uppercase;letter-spacing:.01em;line-height:1.1">{{ o.text }}</span>
+          <!-- aria-pressed carries the selection to a screen reader, and
+               o.mark writes a literal check into the letter badge, so the
+               choice is no longer conveyed by colour alone (WCAG 1.4.1). -->
+          <button sc-camel-on-click="{{ o.onTap }}" aria-pressed="{{ o.pressed }}" style="cursor:pointer;width:100%;min-height:64px;display:flex;align-items:center;gap:13px;text-align:left;padding:10px 14px;border-radius:var(--radius-md);border:1px solid {{ o.border }};border-left:4px solid {{ o.rail }};background:{{ o.bg }};color:{{ o.fg }};transition:transform .08s ease,background .12s ease;-webkit-user-select:none;user-select:none" style-active="transform:scale(.975)">
+            <span style="flex:none;width:38px;height:38px;border-radius:var(--radius-sm);display:grid;place-items:center;background:{{ o.badgeBg }};color:{{ o.badgeFg }};font:800 22px var(--font-heading);box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--color-text) 14%, transparent)">{{ o.mark }}</span>
+            <span style="flex:1;min-width:0;font-family:var(--font-heading);font-size:clamp(19px,5vw,24px);font-weight:700;text-transform:uppercase;letter-spacing:.01em;line-height:1.1">{{ o.text }}</span>
+            <span style="flex:none;font:italic 700 11px/1 var(--font-heading);letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent-300)">{{ o.state }}</span>
           </button>
         </sc-for>
       </div>
-      <div style="flex:none;font-size:13px;text-align:center;min-height:18px;color:{{ pStatusColor }}">{{ pStatus }}</div>
+      <div aria-live="polite" style="flex:none;font-size:13px;text-align:center;min-height:18px;color:{{ pStatusColor }}">{{ pStatus }}</div>
     </div>
   </sc-if>
 
@@ -978,15 +806,22 @@ p{letter-spacing:.005em}
     <div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:14px;justify-content:center">
       <div style="flex:none;text-align:center;display:flex;flex-direction:column;gap:6px">
         <div style="font-family:var(--font-heading);font-size:clamp(44px,10vw,60px);font-weight:800;letter-spacing:.005em;color:{{ pVerdictColor }};animation:lofgSlam .4s ease-out">{{ pVerdict }}</div>
-        <div style="font-size:14px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">Answer: <span style="color:var(--color-accent-300);font-weight:600">{{ correctText }}</span></div>
-        <div style="font-size:13px;color:color-mix(in srgb,var(--color-text) 45%,transparent)">{{ pTimeNote }}</div>
+        <div style="font-size:14px;color:var(--color-muted-strong)">Answer: <span style="color:var(--color-accent-300);font-weight:600">{{ correctText }}</span></div>
+        <div style="font-size:13px;color:var(--color-muted)">{{ pTimeNote }}</div>
+        <!-- The game stays winnable a lot longer than it feels. Brutal is
+             worth 4x Easy and nothing ever said so, so a bad run at question
+             nine read as elimination when twelve points were still live. -->
+        <div style="font-size:13px;color:var(--color-accent-300)">{{ pStanding }}</div>
       </div>
       <div style="flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid var(--color-divider);padding-top:12px;display:flex;flex-direction:column;gap:5px">
         <sc-for list="{{ miniBoard }}" as="r" hint-placeholder-count="5">
-          <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:var(--radius-sm);background:{{ r.rowBg }}">
-            <span style="width:20px;font:600 13px var(--font-heading);color:color-mix(in srgb,var(--color-text) 45%,transparent);font-variant-numeric:tabular-nums">{{ r.rank }}</span>
+          <sc-if value="{{ r.gap }}">
+            <div aria-hidden="true" style="text-align:center;font:600 12px var(--font-heading);letter-spacing:.3em;color:var(--color-muted);padding:1px 0">···</div>
+          </sc-if>
+          <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:var(--radius-sm);background:{{ r.rowBg }};box-shadow:{{ r.rowRing }}">
+            <span style="width:20px;font:600 13px var(--font-heading);color:var(--color-muted);font-variant-numeric:tabular-nums">{{ r.rank }}</span>
             <span style="flex:1;min-width:0;font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
-            <span style="font-size:11px;color:color-mix(in srgb,var(--color-text) 38%,transparent);font-variant-numeric:tabular-nums">{{ r.speed }}</span>
+            <span style="font-size:11px;color:var(--color-muted);font-variant-numeric:tabular-nums">{{ r.speed }}</span>
             <span style="font-family:var(--font-heading);font-size:22px;font-weight:800;font-variant-numeric:tabular-nums">{{ r.score }}</span>
           </div>
         </sc-for>
@@ -995,7 +830,7 @@ p{letter-spacing:.005em}
   </sc-if>
 
   <sc-if value="{{ pCanLeave }}">
-    <button sc-camel-on-click="{{ leaveRoom }}" style="cursor:pointer;align-self:center;background:none;border:none;padding:10px 12px;color:color-mix(in srgb,var(--color-text) 45%,transparent);font-size:13px;text-decoration:underline;text-underline-offset:3px">{{ leaveLabel }}</button>
+    <button sc-camel-on-click="{{ leaveRoom }}" style="cursor:pointer;align-self:center;background:none;border:none;min-height:44px;padding:0 14px;color:var(--color-muted);font-size:13px;text-decoration:underline;text-underline-offset:3px">{{ leaveLabel }}</button>
   </sc-if>
 
   <sc-if value="{{ pCommish }}" hint-placeholder-val="{{ false }}">
@@ -1009,65 +844,75 @@ p{letter-spacing:.005em}
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center">
       <div style="font:italic 700 15px/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:var(--color-accent-400)">Your pick</div>
       <div style="font-family:var(--font-heading);font-size:clamp(94px,26vw,166px);font-weight:800;line-height:.92;letter-spacing:.005em;animation:lofgSlam .5s ease-out">{{ myPickLabel }}</div>
-      <div style="font-size:16px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">{{ myFinalNote }}</div>
+      <div style="font-size:16px;color:var(--color-muted-strong)">{{ myFinalNote }}</div>
+      <!-- Worst-to-first means last place is announced first, alone, with
+           eleven people watching. It is a snake draft, so pick 12 is also
+           pick 13 — the consolation was sitting in the format the whole
+           time and the screen was not saying it. -->
+      <sc-if value="{{ myTurnNote }}">
+      <div style="margin-top:4px;font:italic 700 clamp(15px,4.4vw,19px)/1.35 var(--font-heading);letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-300);max-width:22ch">{{ myTurnNote }}</div>
+      </sc-if>
     </div>
   </sc-if>
-</div>
+</main>
 </sc-if>
 
 <sc-if value="{{ isHost }}">
-<div class="lofg-host" style="height:var(--app-h);overflow:hidden;display:flex;flex-direction:column;padding:max(clamp(14px,2.2vw,36px),env(safe-area-inset-top)) max(clamp(14px,2.2vw,36px),env(safe-area-inset-right)) max(clamp(14px,2.2vw,36px),env(safe-area-inset-bottom)) max(clamp(14px,2.2vw,36px),env(safe-area-inset-left));gap:clamp(10px,1.6vh,22px);box-sizing:border-box">
+<main class="lofg-host" style="height:var(--app-h);overflow:hidden;display:flex;flex-direction:column;padding:max(clamp(14px,2.2vw,36px),env(safe-area-inset-top)) max(clamp(14px,2.2vw,36px),env(safe-area-inset-right)) max(clamp(14px,2.2vw,36px),env(safe-area-inset-bottom)) max(clamp(14px,2.2vw,36px),env(safe-area-inset-left));gap:clamp(10px,1.6vh,22px);box-sizing:border-box">
   <div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap">
     <div style="display:flex;align-items:center;gap:13px">
       <span style="width:32px;height:1px;background:linear-gradient(90deg,transparent,var(--color-accent))"></span>
       <span style="font:italic 700 clamp(15px,.95vw,20px)/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:var(--color-accent-400)">League of Ordinary Gentlemen · Draft Order Challenge</span>
     </div>
     <div style="display:flex;align-items:center;gap:14px">
-      <span style="font-size:clamp(12px,1vw,16px);color:color-mix(in srgb,var(--color-text) 45%,transparent)">{{ hostMeta }}</span>
-      <button sc-camel-on-click="{{ goHome }}" style="cursor:pointer;background:none;border:1px solid var(--color-line);border-radius:var(--radius-sm);color:color-mix(in srgb,var(--color-text) 55%,transparent);font-size:12px;padding:7px 12px" style-hover="border-color:var(--color-accent-600)">Exit</button>
+      <span style="font-size:clamp(12px,1vw,16px);color:var(--color-muted)">{{ hostMeta }}</span>
+      <button sc-camel-on-click="{{ exitTap }}" style="cursor:pointer;background:{{ exitBg }};border:1px solid {{ exitBorder }};border-radius:var(--radius-sm);color:{{ exitColor }};font-size:12px;min-height:44px;padding:0 14px" style-hover="border-color:var(--color-accent-600)">{{ exitLabel }}</button>
     </div>
   </div>
 
   <sc-if value="{{ hLobby }}">
     <div class="lofg-host-lobby" style="flex:1;min-height:0;overflow:hidden;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.95fr);gap:clamp(18px,2.6vw,44px);align-items:center">
       <div style="display:flex;flex-direction:column;gap:14px">
-        <div style="font:italic 700 clamp(15px,1vw,19px)/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 50%,transparent)">Check in at this huddle code</div>
+        <div style="font:italic 700 clamp(15px,1vw,19px)/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:var(--color-muted)">Check in at this huddle code</div>
         <div style="display:flex;align-items:stretch;gap:clamp(10px,1.2vw,16px)">
           <div style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;padding:clamp(10px,1.4vh,20px) clamp(12px,1.6vw,26px);border-radius:var(--radius-md);background:var(--color-bg);border:1px solid var(--color-line);box-shadow:inset 0 2px 14px rgba(0,0,0,.6),0 0 44px color-mix(in srgb, var(--color-accent) 16%, transparent)">
-            <span style="font-family:var(--font-heading);font-size:clamp(88px,13.5vw,248px);font-weight:800;line-height:.82;letter-spacing:.04em;color:var(--color-accent-200);text-shadow:0 0 46px color-mix(in srgb, var(--color-accent) 50%, transparent)">{{ code }}</span>
+            <h1 style="margin:0;font-family:var(--font-heading);font-size:clamp(88px,13.5vw,248px);font-weight:800;line-height:.82;letter-spacing:.04em;color:var(--color-accent-200);text-shadow:0 0 46px color-mix(in srgb, var(--color-accent) 50%, transparent)">{{ code }}</h1>
           </div>
           <sc-if value="{{ hasQr }}" hint-placeholder-val="{{ true }}">
           <div style="flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:clamp(7px,.9vh,11px);border-radius:var(--radius-md);background:var(--color-bg);border:1px solid var(--color-line)">
-            <canvas data-qr="join" style="display:block;width:clamp(124px,13.5vw,248px);height:clamp(124px,13.5vw,248px);border-radius:3px"></canvas>
-            <span style="font:italic 700 clamp(11px,.62vw,14px)/1 var(--font-heading);letter-spacing:.14em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 45%,transparent)">Scan to join</span>
+            <canvas data-qr="join" role="img" aria-label="{{ qrAlt }}" style="display:block;width:clamp(124px,13.5vw,248px);height:clamp(124px,13.5vw,248px);border-radius:3px"></canvas>
+            <span style="font:italic 700 clamp(11px,.62vw,14px)/1 var(--font-heading);letter-spacing:.14em;text-transform:uppercase;color:var(--color-muted)">Scan to join</span>
           </div>
           </sc-if>
         </div>
         <sc-if value="{{ qrNote }}" hint-placeholder-val="{{ false }}">
-        <div style="font-size:clamp(11px,.95vw,14px);color:color-mix(in srgb,var(--color-text) 45%,transparent);max-width:44ch;text-wrap:pretty">{{ qrNote }}</div>
+        <div style="font-size:clamp(11px,.95vw,14px);color:var(--color-muted);max-width:44ch;text-wrap:pretty">{{ qrNote }}</div>
         </sc-if>
         <div style="display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:var(--radius-sm);background:var(--color-surface);border:1px solid var(--color-line);align-self:flex-start;max-width:100%">
-          <span style="flex:none;font:italic 700 clamp(11px,.62vw,14px)/1 var(--font-heading);letter-spacing:.16em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 40%,transparent)">or type</span>
+          <span style="flex:none;font:italic 700 clamp(11px,.62vw,14px)/1 var(--font-heading);letter-spacing:.16em;text-transform:uppercase;color:var(--color-muted)">or type</span>
           <span style="min-width:0;font-family:var(--font-heading);font-size:clamp(17px,1.15vw,26px);font-weight:800;letter-spacing:.005em;color:var(--color-accent-200);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ joinLine }}</span>
         </div>
-        <div style="font-size:clamp(14px,1.2vw,19px);color:color-mix(in srgb,var(--color-text) 55%,transparent);max-width:34ch;text-wrap:pretty">Twelve questions decide the draft order · winner takes first pick. Play sheet drawn at random at kickoff — nothing you tap on your phone shows up here.</div>
+        <div style="display:flex;flex-direction:column;gap:6px;max-width:38ch">
+            <div style="font-size:clamp(14px,1.2vw,19px);color:var(--color-muted-strong);text-wrap:pretty">Twelve questions decide the draft order · winner takes first pick. Play sheet drawn at random at kickoff — nothing you tap on your phone shows up here.</div>
+            <div style="font-size:clamp(13px,1.05vw,17px);color:var(--color-accent-300);text-wrap:pretty">Thirty seconds a question. Easy 1pt · Medium 2 · Hard 3 · Brutal 4. The back half is worth double the front, and ties break on total time.</div>
+          </div>
         <div style="display:flex;gap:12px;flex-wrap:wrap">
           <sc-if value="{{ tvStartLocked }}" hint-placeholder-val="{{ false }}">
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-            <span style="min-height:62px;padding:0 34px;display:inline-flex;align-items:center;border-radius:var(--radius-md);border:1px dashed #2b3d59;background:transparent;color:color-mix(in srgb,var(--color-text) 30%,transparent);font-family:var(--font-heading);font-size:clamp(24px,1.9vw,36px);font-weight:800;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;cursor:not-allowed">Kick off</span>
+            <span style="min-height:62px;padding:0 34px;display:inline-flex;align-items:center;border-radius:var(--radius-md);border:1px dashed var(--color-line-strong);background:transparent;color:var(--color-muted);font-family:var(--font-heading);font-size:clamp(24px,1.9vw,36px);font-weight:800;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;cursor:not-allowed">Kick off</span>
             <span style="font-size:clamp(12px,1vw,15px);color:var(--color-accent-300);max-width:22ch;text-wrap:pretty">{{ tvStartNote }}</span>
           </div>
           </sc-if>
           <sc-if value="{{ tvStartOwned }}" hint-placeholder-val="{{ true }}">
-          <button sc-camel-on-click="{{ startGame }}" style="cursor:pointer;min-height:62px;padding:0 34px;border-radius:var(--radius-md);border:1px solid var(--color-onair);background:var(--color-onair);color:#fff;font-family:var(--font-heading);font-size:clamp(24px,1.9vw,36px);font-weight:800;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;box-shadow:0 0 22px rgba(212,24,24,.4)" style-hover="background:#ee2020;border-color:#ee2020">Kick off</button>
+          <button sc-camel-on-click="{{ startGame }}" style="cursor:pointer;min-height:62px;padding:0 34px;border-radius:var(--radius-md);border:1px solid var(--color-onair);background:var(--color-onair);color:#fff;font-family:var(--font-heading);font-size:clamp(24px,1.9vw,36px);font-weight:800;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;box-shadow:0 0 22px rgba(212,24,24,.4)" style-hover="background:var(--color-onair-hot);border-color:var(--color-onair-hot)">Kick off</button>
           </sc-if>
-          <button sc-camel-on-click="{{ addDemo }}" style="cursor:pointer;min-height:58px;padding:0 22px;border-radius:var(--radius-md);border:1px solid #2b3d59;background:transparent;color:color-mix(in srgb,var(--color-text) 70%,transparent);font-size:clamp(14px,1.2vw,17px);white-space:nowrap" style-hover="border-color:var(--color-accent-600);color:var(--color-text)">Fill the roster (demo)</button>
+          <button sc-camel-on-click="{{ addDemo }}" style="cursor:pointer;min-height:58px;padding:0 22px;border-radius:var(--radius-md);border:1px solid var(--color-line-strong);background:transparent;color:var(--color-muted-strong);font-size:clamp(14px,1.2vw,17px);white-space:nowrap" style-hover="border-color:var(--color-accent-600);color:var(--color-text)">Fill the roster (demo)</button>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:12px">
         <div style="display:flex;align-items:baseline;gap:10px">
           <span style="font-family:var(--font-heading);font-size:clamp(52px,4.6vw,96px);font-weight:800;line-height:.85;letter-spacing:.005em;font-variant-numeric:tabular-nums">{{ playerCount }}</span>
-          <span style="font:italic 700 clamp(15px,1vw,19px)/1 var(--font-heading);letter-spacing:.18em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 45%,transparent)">on the roster</span>
+          <span style="font:italic 700 clamp(15px,1vw,19px)/1 var(--font-heading);letter-spacing:.18em;text-transform:uppercase;color:var(--color-muted)">on the roster</span>
         </div>
         <div style="font:italic 700 clamp(14px,.85vw,18px)/1.4 var(--font-heading);letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent-400);text-wrap:pretty">Commissioner — tap your name to run the game from your phone</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px">
@@ -1079,13 +924,13 @@ p{letter-spacing:.005em}
             </button>
           </sc-for>
         </div>
-        <div style="font-size:13px;color:color-mix(in srgb,var(--color-text) 40%,transparent)">{{ lobbyHint }}</div>
+        <div style="font-size:13px;color:var(--color-muted)">{{ lobbyHint }}</div>
       </div>
     </div>
   </sc-if>
 
   <sc-if value="{{ hIntro }}" hint-placeholder-val="{{ false }}">
-    <div class="lofg-intro" sc-camel-on-click="{{ skipIntro }}">
+    <button type="button" class="lofg-intro" sc-camel-on-click="{{ skipIntro }}" aria-label="Skip the kickoff sequence" style="border:0;font:inherit;color:inherit;text-align:inherit">
       <sc-if value="{{ showIntroPlate }}" hint-placeholder-val="{{ true }}">
       <video class="lofg-intro-plate" src="kickoff-plate.mp4" autoplay muted playsinline preload="auto" aria-hidden="true" tabindex="-1"></video>
       </sc-if>
@@ -1115,28 +960,28 @@ p{letter-spacing:.005em}
       </div>
       <div class="lofg-intro-wipe-lead"></div>
       <div class="lofg-intro-wipe"></div>
-    </div>
+    </button>
   </sc-if>
 
   <sc-if value="{{ hQuestion }}">
     <div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:clamp(8px,1.4vh,20px)">
       <div class="lofg-host-statusrow" style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-          <span style="white-space:nowrap;font:italic 700 clamp(15px,1vw,20px)/1 var(--font-heading);letter-spacing:.16em;text-transform:uppercase;padding:8px 13px;border-radius:var(--radius-sm);border:1px solid {{ tierFg }};color:{{ tierFg }}">{{ tierLabel }} · {{ tierPoints }} pt</span>
-          <span style="white-space:nowrap;font:italic 700 clamp(15px,1vw,20px)/1 var(--font-heading);letter-spacing:.16em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 42%,transparent)">Drive {{ qNum }} of 12 · {{ downLabel }}</span>
+          <span style="white-space:nowrap;font:italic 700 clamp(15px,1vw,20px)/1 var(--font-heading);letter-spacing:.16em;text-transform:uppercase;padding:8px 13px;border-radius:var(--radius-sm);border:1px solid {{ tierFg }};color:{{ tierInk }}">{{ tierLabel }} · {{ tierPoints }} pt</span>
+          <span style="white-space:nowrap;font:italic 700 clamp(15px,1vw,20px)/1 var(--font-heading);letter-spacing:.16em;text-transform:uppercase;color:var(--color-muted)">Drive {{ qNum }} of {{ qTotal }}</span>
         </div>
-        <div class="lofg-host-clockgroup" style="display:flex;align-items:stretch;gap:clamp(10px,1.4vw,20px)">
+        <div class="lofg-host-clockgroup" role="timer" aria-label="Time remaining" style="display:flex;align-items:stretch;gap:clamp(10px,1.4vw,20px)">
           <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;padding:clamp(8px,1vh,14px) clamp(12px,1.4vw,20px);border-radius:var(--radius-sm);background:var(--color-bg);border:1px solid var(--color-line);box-shadow:inset 0 1px 0 color-mix(in srgb, var(--color-text) 5%, transparent)">
             <div style="font-family:var(--font-heading);font-size:clamp(31px,2.8vw,57px);font-weight:800;letter-spacing:.005em;font-variant-numeric:tabular-nums;color:var(--color-accent-200)">{{ answeredLabel }}</div>
-            <div style="font:italic 700 clamp(12px,.75vw,15px)/1 var(--font-heading);letter-spacing:.18em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 40%,transparent)">cards in</div>
+            <div style="font:italic 700 clamp(12px,.75vw,15px)/1 var(--font-heading);letter-spacing:.18em;text-transform:uppercase;color:var(--color-muted)">cards in</div>
           </div>
           <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;padding:clamp(6px,.8vh,12px) clamp(16px,2vw,30px);border-radius:var(--radius-sm);background:var(--color-bg);border:1px solid {{ clockBorder }};box-shadow:inset 0 2px 10px rgba(0,0,0,.6), 0 0 34px {{ clockGlow }}">
-            <div style="font-family:var(--font-heading);font-size:clamp(44px,6.6vw,140px);font-weight:800;line-height:.92;letter-spacing:.01em;font-variant-numeric:tabular-nums;color:{{ clockColor }};text-shadow:0 0 22px {{ clockGlow }};animation:{{ clockAnim }}">{{ clock }}</div>
-            <div style="font:italic 700 clamp(12px,.75vw,15px)/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 38%,transparent)">play clock</div>
+            <div style="font-family:var(--font-heading);font-size:clamp(40px,4.2vw,86px);font-weight:800;line-height:.92;letter-spacing:.01em;font-variant-numeric:tabular-nums;color:{{ clockColor }};text-shadow:0 0 22px {{ clockGlow }};animation:{{ clockAnim }}">{{ clock }}</div>
+            <div style="font:italic 700 clamp(12px,.75vw,15px)/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:var(--color-muted)">play clock</div>
           </div>
         </div>
       </div>
-      <div style="position:relative;height:clamp(44px,5.2vh,66px);border-radius:var(--radius-sm);overflow:hidden;background:linear-gradient(180deg,var(--color-surface),var(--color-bg));border:1px solid var(--color-line)">
+      <div aria-hidden="true" style="position:relative;height:clamp(44px,5.2vh,66px);border-radius:var(--radius-sm);overflow:hidden;background:linear-gradient(180deg,var(--color-surface),var(--color-bg));border:1px solid var(--color-line)">
         <div style="position:absolute;top:0;bottom:0;left:0;width:6%;background:repeating-linear-gradient(45deg,color-mix(in srgb, var(--color-accent) 22%, transparent) 0,color-mix(in srgb, var(--color-accent) 22%, transparent) 4px,transparent 4px,transparent 10px);border-right:1px solid color-mix(in srgb, var(--color-text) 34%, transparent)"></div>
         <div style="position:absolute;top:0;bottom:0;right:0;width:6%;background:repeating-linear-gradient(45deg,color-mix(in srgb, var(--color-accent) 22%, transparent) 0,color-mix(in srgb, var(--color-accent) 22%, transparent) 4px,transparent 4px,transparent 10px);border-left:1px solid color-mix(in srgb, var(--color-text) 34%, transparent)"></div>
         <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(90deg,transparent 0,transparent calc(10% - 1px),color-mix(in srgb, var(--color-text) 16%, transparent) calc(10% - 1px),color-mix(in srgb, var(--color-text) 16%, transparent) 10%)"></div>
@@ -1153,9 +998,9 @@ p{letter-spacing:.005em}
           <span style="position:absolute;top:50%;left:80%;transform:translate(-50%,-50%);font-family:var(--font-heading);font-size:clamp(12px,.95vw,20px);font-weight:800;letter-spacing:.06em;color:color-mix(in srgb, var(--color-text) 26%, transparent)">20</span>
           <span style="position:absolute;top:50%;left:90%;transform:translate(-50%,-50%);font-family:var(--font-heading);font-size:clamp(12px,.95vw,20px);font-weight:800;letter-spacing:.06em;color:color-mix(in srgb, var(--color-text) 26%, transparent)">10</span>
         </div>
-        <div style="position:absolute;top:0;bottom:0;left:0;width:{{ clockPct }}%;background:linear-gradient(90deg,color-mix(in srgb,var(--color-accent) 8%,transparent),color-mix(in srgb,var(--color-accent) 30%,transparent));transition:width .9s linear"></div>
-        <div style="position:absolute;top:0;bottom:0;left:{{ clockPct }}%;width:2px;background:{{ clockColor }};box-shadow:0 0 16px {{ clockGlow }};transition:left .9s linear"></div>
-        <div style="position:absolute;top:50%;left:{{ runnerLeft }};transform:translate(-50%,-50%);transition:left .9s linear;display:flex;align-items:center;gap:6px">
+        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform-origin:left center;transform:scaleX({{ clockFrac }});will-change:transform;background:linear-gradient(90deg,color-mix(in srgb,var(--color-accent) 8%,transparent),color-mix(in srgb,var(--color-accent) 30%,transparent));transition:transform .9s linear"></div>
+        <div style="position:absolute;top:0;bottom:0;left:0;width:2px;transform:translateX({{ playheadShift }});will-change:transform;background:{{ clockColor }};box-shadow:0 0 16px {{ clockGlow }};transition:transform .9s linear"></div>
+        <div style="position:absolute;top:50%;left:0;transform:translate({{ runnerShift }},-50%);will-change:transform;transition:transform .9s linear;display:flex;align-items:center;gap:6px">
           <span style="display:flex;gap:4px;opacity:.55">
             <span style="width:14px;height:2px;border-radius:1px;background:{{ clockColor }};animation:lofgLegs .32s ease-in-out infinite"></span>
             <span style="width:9px;height:2px;border-radius:1px;background:{{ clockColor }};animation:lofgLegs .32s ease-in-out infinite .16s"></span>
@@ -1167,10 +1012,10 @@ p{letter-spacing:.005em}
           </svg>
         </div>
       </div>
-      <div style="flex:none;font-family:var(--font-heading);font-size:clamp(30px,3.6vw,74px);font-weight:700;line-height:1.02;letter-spacing:.005em;text-wrap:pretty;max-width:30ch">{{ qText }}</div>
+      <h1 style="flex:none;margin:0;font-family:var(--font-heading);font-size:clamp(34px,4.8vw,96px);font-weight:700;line-height:1.0;letter-spacing:.005em;text-transform:none;text-wrap:pretty;max-width:26ch">{{ qText }}</h1>
       <div class="lofg-host-answers" style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:repeat(2,minmax(0,1fr));gap:clamp(8px,1.2vw,16px)">
         <sc-for list="{{ hOptions }}" as="o" hint-placeholder-count="4">
-          <div style="text-align:left;width:100%;color:var(--color-text);display:flex;align-items:center;gap:14px;padding:clamp(12px,1.4vw,22px) clamp(16px,1.8vw,26px);border-radius:var(--radius-md);background:var(--color-surface);border:1px solid var(--color-line);border-left:4px solid #2b3d59;box-sizing:border-box">
+          <div style="text-align:left;width:100%;color:var(--color-text);display:flex;align-items:center;gap:14px;padding:clamp(12px,1.4vw,22px) clamp(16px,1.8vw,26px);border-radius:var(--radius-md);background:var(--color-surface);border:1px solid var(--color-line);border-left:4px solid var(--color-line-strong);box-sizing:border-box">
             <span style="flex:none;width:clamp(46px,4.6vw,76px);height:clamp(46px,4.6vw,76px);border-radius:var(--radius-sm);display:grid;place-items:center;background:var(--color-accent-900);color:var(--color-accent-200);font-family:var(--font-heading);font-weight:800;font-size:clamp(26px,2.3vw,46px);box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--color-text) 14%, transparent)">{{ o.letter }}</span>
             <span style="flex:1;font-family:var(--font-heading);font-size:clamp(26px,2.9vw,58px);font-weight:800;text-transform:uppercase;line-height:1;letter-spacing:.01em">{{ o.text }}</span>
           </div>
@@ -1183,7 +1028,7 @@ p{letter-spacing:.005em}
           </sc-for>
         </div>
         <span style="flex:none;font-size:clamp(12px,1vw,16px);color:var(--color-accent-300);white-space:nowrap">{{ remoteNote }}</span>
-        <button sc-camel-on-click="{{ endQuestion }}" style="cursor:pointer;min-height:60px;padding:0 26px;border-radius:var(--radius-md);border:1px solid #2b3d59;background:transparent;color:color-mix(in srgb,var(--color-text) 72%,transparent);font-family:var(--font-heading);font-size:clamp(20px,1.3vw,26px);font-weight:800;white-space:nowrap" style-hover="border-color:var(--color-accent);color:var(--color-accent-200)">Blow the whistle</button>
+        <button sc-camel-on-click="{{ endQuestion }}" style="cursor:pointer;min-height:60px;padding:0 26px;border-radius:var(--radius-md);border:1px solid var(--color-line-strong);background:transparent;color:var(--color-muted-strong);font-family:var(--font-heading);font-size:clamp(20px,1.3vw,26px);font-weight:800;white-space:nowrap" style-hover="border-color:var(--color-accent);color:var(--color-accent-200)">Blow the whistle</button>
       </div>
     </div>
   </sc-if>
@@ -1191,15 +1036,15 @@ p{letter-spacing:.005em}
   <sc-if value="{{ hResults }}">
     <div class="lofg-host-reveal" style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);grid-template-rows:minmax(0,1fr);gap:clamp(18px,2.6vw,40px)">
       <div style="min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:clamp(6px,1vh,14px)">
-        <div style="font:italic 700 clamp(15px,1vw,19px)/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 45%,transparent)">Drive {{ qNum }} · the call was</div>
-        <div style="font-family:var(--font-heading);font-size:clamp(34px,3.4vw,66px);font-weight:800;text-transform:uppercase;line-height:1;letter-spacing:.01em;color:var(--color-accent-300);text-wrap:pretty">{{ correctText }}</div>
-        <div style="font-size:clamp(14px,1.2vw,19px);color:color-mix(in srgb,var(--color-text) 55%,transparent);max-width:34ch;text-wrap:pretty">{{ qText }}</div>
+        <div style="font:italic 700 clamp(15px,1vw,19px)/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:var(--color-muted)">Drive {{ qNum }} · the call was</div>
+        <h1 style="margin:0;font-family:var(--font-heading);font-size:clamp(34px,3.4vw,66px);font-weight:800;text-transform:uppercase;line-height:1;letter-spacing:.01em;color:var(--color-accent-300);text-wrap:pretty">{{ correctText }}</h1>
+        <div style="font-size:clamp(14px,1.2vw,19px);color:var(--color-muted-strong);max-width:34ch;text-wrap:pretty">{{ qText }}</div>
         <div style="display:flex;flex-direction:column;gap:6px">
-          <div style="font:italic 700 14px/1 var(--font-heading);letter-spacing:.18em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 42%,transparent)">Fastest whistle</div>
+          <div style="font:italic 700 14px/1 var(--font-heading);letter-spacing:.18em;text-transform:uppercase;color:var(--color-muted)">Fastest whistle</div>
           <div style="font-family:var(--font-heading);font-size:clamp(31px,2.7vw,54px);font-weight:800;text-transform:uppercase;letter-spacing:.01em" class="tnum">{{ fastestLabel }}</div>
         </div>
         <div style="flex:none;display:flex;flex-direction:column;gap:8px;margin-bottom:auto">
-          <div style="font:italic 700 clamp(14px,.85vw,18px)/1 var(--font-heading);letter-spacing:.18em;text-transform:uppercase;color:color-mix(in srgb,var(--color-accent-300) 90%,transparent)">On the board ({{ correctCount }})</div>
+          <div style="font:italic 700 clamp(14px,.85vw,18px)/1 var(--font-heading);letter-spacing:.18em;text-transform:uppercase;color:var(--color-accent-300)">On the board ({{ correctCount }})</div>
           <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px">
             <sc-for list="{{ correctList }}" as="c" hint-placeholder-count="5">
               <span style="display:block;text-align:center;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;padding:6px 8px;border-radius:var(--radius-sm);font-size:clamp(10px,.95vw,17px);font-weight:500;background:var(--color-accent-900);color:var(--color-accent-200);border:1px solid var(--color-accent-700)">{{ c.label }}</span>
@@ -1225,53 +1070,53 @@ p{letter-spacing:.005em}
         <button sc-camel-on-click="{{ nextQuestion }}" style="flex:none;cursor:pointer;min-height:clamp(52px,7vh,66px);padding:0 30px;border-radius:var(--radius-md);border:1px solid var(--color-accent);background:transparent;color:var(--color-accent-200);font-family:var(--font-heading);font-size:clamp(21px,1.4vw,29px);font-weight:800;white-space:nowrap;align-self:flex-start" style-hover="background:color-mix(in srgb,var(--color-accent) 16%,transparent)">{{ nextLabel }}</button>
       </div>
       <div style="min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:4px">
-        <div style="flex:none;font:italic 700 clamp(15px,1vw,19px)/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 58%,transparent);margin-bottom:2px">Scoreboard</div>
+        <div style="flex:none;font:italic 700 clamp(15px,1vw,19px)/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:var(--color-muted-strong);margin-bottom:2px">Scoreboard</div>
         <sc-for list="{{ board }}" as="r" hint-placeholder-count="8">
           <div style="flex:1;min-height:0;display:flex;align-items:center;gap:clamp(8px,1.1vw,14px);padding:0 clamp(10px,1.2vw,16px);border-radius:var(--radius-sm);background:{{ r.rowBg }};border-left:2px solid {{ r.mark }}">
-            <span style="flex:none;width:clamp(22px,2vw,34px);font-family:var(--font-heading);font-size:clamp(18px,1.3vw,31px);font-weight:800;color:color-mix(in srgb,var(--color-text) 55%,transparent);font-variant-numeric:tabular-nums">{{ r.rank }}</span>
+            <span style="flex:none;width:clamp(22px,2vw,34px);font-family:var(--font-heading);font-size:clamp(18px,1.3vw,31px);font-weight:800;color:var(--color-muted-strong);font-variant-numeric:tabular-nums">{{ r.rank }}</span>
             <span style="flex:1;min-width:0;font-family:var(--font-heading);font-size:clamp(19px,1.8vw,42px);font-weight:800;text-transform:uppercase;letter-spacing:.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.name }}</span>
-            <span style="flex:none;font-size:clamp(12px,1.15vw,22px);color:color-mix(in srgb,var(--color-text) 58%,transparent);font-variant-numeric:tabular-nums">{{ r.speed }}</span>
+            <span style="flex:none;font-size:clamp(12px,1.15vw,22px);color:var(--color-muted-strong);font-variant-numeric:tabular-nums">{{ r.speed }}</span>
             <span style="flex:none;font-family:var(--font-heading);font-size:clamp(22px,1.85vw,47px);font-weight:800;font-variant-numeric:tabular-nums;color:{{ r.scoreColor }}">{{ r.score }}</span>
           </div>
         </sc-for>
-        <div style="flex:none;font-size:clamp(11px,.95vw,17px);color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-top:4px">Middle column is cumulative time on correct answers — the tiebreaker. Lower wins.</div>
+        <div style="flex:none;font-size:clamp(11px,.95vw,17px);color:var(--color-muted-strong);margin-top:4px">Middle column is cumulative time on correct answers — the tiebreaker. Lower wins.</div>
       </div>
     </div>
   </sc-if>
 
   <sc-if value="{{ hReveal }}">
-    <div sc-camel-on-click="{{ skipRevealHold }}" style="flex:1;min-height:0;display:flex;flex-direction:column;gap:clamp(10px,1.8vh,24px)">
+    <div sc-camel-on-click="{{ skipRevealHold }}" sc-camel-on-key-down="{{ skipRevealKey }}" role="button" tabindex="0" aria-label="Skip the read and start the draft order" style="flex:1;min-height:0;display:flex;flex-direction:column;gap:clamp(10px,1.8vh,24px)">
       <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap">
         <div>
           <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:var(--radius-sm);background:var(--color-accent-900);border:1px solid var(--color-accent-700);margin-bottom:10px">
             <span style="width:7px;height:7px;border-radius:50%;background:var(--color-accent-300);animation:lofgPulse 1.2s ease-in-out infinite"></span>
             <span style="font:italic 700 clamp(14px,.9vw,18px)/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;white-space:nowrap;color:var(--color-accent-200)">League of Ordinary Gentlemen · Draft Board</span>
           </div>
-          <div style="font-family:var(--font-heading);font-size:clamp(38px,4.2vw,84px);font-weight:800;text-transform:uppercase;line-height:.95;letter-spacing:.01em">{{ revealHeadline }}</div>
+          <h1 style="margin:0;font-family:var(--font-heading);font-size:clamp(38px,4.2vw,84px);font-weight:800;text-transform:uppercase;line-height:.95;letter-spacing:.01em">{{ revealHeadline }}</h1>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <button sc-camel-on-click="{{ copyShare }}" style="cursor:pointer;min-height:56px;padding:0 22px;border-radius:var(--radius-md);border:1px solid #2b3d59;background:transparent;color:color-mix(in srgb,var(--color-text) 72%,transparent);font-size:clamp(13px,1.1vw,16px);font-weight:500;white-space:nowrap" style-hover="border-color:var(--color-accent);color:var(--color-accent-200)">{{ copyLabel }}</button>
-          <button sc-camel-on-click="{{ downloadCard }}" style="cursor:pointer;min-height:56px;padding:0 22px;border-radius:var(--radius-md);border:1px solid #2b3d59;background:transparent;color:color-mix(in srgb,var(--color-text) 72%,transparent);font-size:clamp(13px,1.1vw,16px);font-weight:500;white-space:nowrap" style-hover="border-color:var(--color-accent);color:var(--color-accent-200)">Download card</button>
+          <button sc-camel-on-click="{{ copyShareTap }}" style="cursor:pointer;min-height:56px;padding:0 22px;border-radius:var(--radius-md);border:1px solid var(--color-line-strong);background:transparent;color:var(--color-muted-strong);font-size:clamp(13px,1.1vw,16px);font-weight:500;white-space:nowrap" style-hover="border-color:var(--color-accent);color:var(--color-accent-200)">{{ copyLabel }}</button>
+          <button sc-camel-on-click="{{ downloadCardTap }}" style="cursor:pointer;min-height:56px;padding:0 22px;border-radius:var(--radius-md);border:1px solid var(--color-line-strong);background:transparent;color:var(--color-muted-strong);font-size:clamp(13px,1.1vw,16px);font-weight:500;white-space:nowrap" style-hover="border-color:var(--color-accent);color:var(--color-accent-200)">Download card</button>
         </div>
       </div>
       <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:minmax(0,1fr);gap:clamp(5px,.7vw,11px)">
         <sc-for list="{{ draftRows }}" as="d" hint-placeholder-count="12">
           <div style="display:flex;align-items:stretch;border-radius:var(--radius-md);overflow:hidden;background:{{ d.bg }};border:1px solid {{ d.border }};opacity:{{ d.opacity }};animation:{{ d.anim }}">
             <span style="flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0 clamp(9px,1vw,15px);background:rgba(0,0,0,.3);border-right:1px solid {{ d.border }};min-width:clamp(50px,4.8vw,82px)">
-              <span style="font:italic 700 clamp(11px,.6vw,14px)/1 var(--font-heading);letter-spacing:.18em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 38%,transparent)">Pick</span>
+              <span style="font:italic 700 clamp(11px,.6vw,14px)/1 var(--font-heading);letter-spacing:.18em;text-transform:uppercase;color:var(--color-muted)">Pick</span>
               <span style="font-family:var(--font-heading);font-size:clamp(25px,2.1vw,47px);font-weight:800;line-height:1;letter-spacing:.005em;font-variant-numeric:tabular-nums;color:{{ d.pickColor }}">{{ d.pickNum }}</span>
             </span>
             <span style="flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:0 clamp(10px,1.2vw,18px)">
               <span style="flex:1;min-width:0;font-family:var(--font-heading);font-size:clamp(20px,1.8vw,38px);font-weight:800;text-transform:uppercase;letter-spacing:.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:{{ d.nameColor }}">{{ d.name }}</span>
-              <span style="flex:none;font-size:clamp(11px,.95vw,15px);color:color-mix(in srgb,var(--color-text) 42%,transparent);font-variant-numeric:tabular-nums">{{ d.detail }}</span>
+              <span style="flex:none;font-size:clamp(11px,.95vw,15px);color:var(--color-muted);font-variant-numeric:tabular-nums">{{ d.detail }}</span>
             </span>
           </div>
         </sc-for>
       </div>
-      <div style="font-size:clamp(12px,1vw,15px);color:color-mix(in srgb,var(--color-text) 40%,transparent)">{{ revealFoot }}</div>
+      <div style="font-size:clamp(12px,1vw,15px);color:var(--color-muted)">{{ revealFoot }}</div>
     </div>
   </sc-if>
-</div>
+</main>
 </sc-if>
 
 </div>
@@ -1282,6 +1127,25 @@ const SB_URL = "https://qbzsinhlzuxdjvwfurxe.supabase.co";
 const SB_KEY = "sb_publishable_qMEuvB-ugPpbf26vZYCrhg_-AY6hull";
 const QUESTION_SECONDS = 30;
 const QUESTIONS_PER_TIER = 3;
+// I and O are held out so a code cannot be misread as 1 or 0 across a lit
+// room. The mint and the join filter both read from here now; they used to
+// disagree, which made "IOWA" a well-formed code that matched nothing.
+const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+const CODE_REJECT_RE = /[^ABCDEFGHJKLMNPQRSTUVWXYZ]/g;
+// How long a phone looks for a room before it admits the room is not there.
+// Long enough to cover a host still booting on a bad hotspot, short enough
+// that nobody stands in a loud room reading an ellipsis.
+const JOIN_GIVEUP_MS = 6000;
+// How long a tapped answer stays changeable before it locks.
+const CHANGE_MS = 2000;
+// Twelve seats. addDemo already respected this; real joins did not, so a
+// thirteenth phone joined silently and the lobby offered "-1 more can join".
+const MAX_PLAYERS = 12;
+// It is a snake draft, so the last seat is also the first seat of round two.
+const SNAKE_DRAFT = true;
+// A resumable host session, so a stray Exit or a tab crash is survivable.
+const RESUME_KEY = "loog.host.session";
+const RESUME_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 // How many of each tier's three come from the league's own history. A floor,
 // not a quota — see drawQuestions.
 const LEAGUE_QUOTA = 1;
@@ -1332,11 +1196,14 @@ function prefersReducedMotion() {
   try { return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); }
   catch (e) { return false; }
 }
+// fg is the fill/border value; ink is the same hue lifted to clear 4.5:1 as
+// TEXT on --color-surface. Easy and Medium alias, TE and QB do not — same
+// split --color-onair/--onair-ink already uses.
 const TIERS = [
-  { key: "easy", label: "Easy", points: 1, fg: "var(--tier-easy)" },
-  { key: "medium", label: "Medium", points: 2, fg: "var(--tier-medium)" },
-  { key: "hard", label: "Hard", points: 3, fg: "var(--tier-hard)" },
-  { key: "brutal", label: "Brutal", points: 4, fg: "var(--tier-brutal)" }
+  { key: "easy", label: "Easy", points: 1, fg: "var(--tier-easy)", ink: "var(--tier-easy-ink)" },
+  { key: "medium", label: "Medium", points: 2, fg: "var(--tier-medium)", ink: "var(--tier-medium-ink)" },
+  { key: "hard", label: "Hard", points: 3, fg: "var(--tier-hard)", ink: "var(--tier-hard-ink)" },
+  { key: "brutal", label: "Brutal", points: 4, fg: "var(--tier-brutal)", ink: "var(--tier-brutal-ink)" }
 ];
 const POOL = {
   easy: [
@@ -1533,8 +1400,14 @@ function deviceId() {
 function shuffle(a) { const r = a.slice(); for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; }
 function fmt(ms) { return (ms / 1000).toFixed(1) + "s"; }
 function pts(n) { return n + (n === 1 ? " pt" : " pts"); }
-function mmss(s) { return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+// Under a minute the "0:" carries no information and eats about 40% of the
+// glyph budget on a numeral that has to read across a room.
+function mmss(s) { return s < 60 ? String(s) : Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
 function ordinal(n) { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+// slice() counts UTF-16 code units, so an emoji sitting on the boundary got
+// cut in half and rendered as a replacement box. Array.from splits on code
+// points, which is right for every name anyone has actually typed.
+function clip(str, n) { const a = Array.from(String(str)); return a.length <= n ? String(str) : a.slice(0, n).join(""); }
 
 class Component extends DCLogic {
   state = {
@@ -1548,25 +1421,32 @@ class Component extends DCLogic {
     // Read-during-render means a preference or window change never triggers
     // one, so the video would be stuck on whatever was true at mount.
     tvSized: isTvSized(), reduceMotion: prefersReducedMotion(),
+    // link: "" | "live" | "down" — whether snapshots are still arriving.
+    // joinSearch: "" | "looking" | "missing" | "full" | "found".
+    // exitArmed: the host Exit button's two-step confirm.
+    // resume: a host session recovered from localStorage, offered on home.
+    link: "", joinSearch: "", exitArmed: false, resume: null,
     snap: null
   };
 
   componentDidMount() {
     this.demoTimers = [];
     let saved = "";
-    try { saved = (localStorage.getItem("loog.name") || "").slice(0, 18); } catch (e) {}
+    try { saved = clip(localStorage.getItem("loog.name") || "", 18); } catch (e) {}
     const h = (location.hash || "").replace(/^#/, "").toUpperCase();
     // Room codes never contain I or O, so "JOIN" can't collide with one.
     if (h === "JOIN") this.setState({ screen: "join", joinName: saved });
-    else if (/^[A-Z]{4}$/.test(h)) this.setState({ screen: "join", joinCode: h, joinName: saved, scanned: true });
+    else if (/^[A-Z]{4}$/.test(h)) this.setState({ screen: "join", joinCode: h.replace(CODE_REJECT_RE, ""), joinName: saved, scanned: true });
     else if (saved) this.setState({ joinName: saved });
+    // A host session left behind by a crash, a refresh or a stray Exit.
+    this.setState({ resume: this.readSession() });
     setTimeout(() => this.drawQr(), 0);
     const boot = () => {
       if (window.supabase && window.supabase.createClient) {
         try { this.sb = window.supabase.createClient(SB_URL, SB_KEY, { realtime: { params: { eventsPerSecond: 30 } } }); this.setState({ rt: "ready" }); }
-        catch (e) { this.setState({ rt: "unavailable — demo mode only" }); }
+        catch (e) { this.setState({ rt: "offline" }); }
       } else if (Date.now() - t0 < 8000) { setTimeout(boot, 250); }
-      else { this.setState({ rt: "unavailable — demo mode only" }); }
+      else { this.setState({ rt: "offline" }); }
     };
     const t0 = Date.now();
     boot();
@@ -1631,19 +1511,57 @@ class Component extends DCLogic {
     });
   }
 
-  componentWillUnmount() { this.stopClock(); this.clearDemo(); this.stopIntroVo(); this.stopRevealVo(); this.unwatchMedia(); if (this.ch) this.ch.unsubscribe(); }
+  componentWillUnmount() {
+    this.stopClock(); this.clearDemo(); this.stopIntroVo(); this.stopRevealVo(); this.unwatchMedia();
+    // Everything that could still fire a setState on a dead component.
+    if (this.pingTimer) { clearInterval(this.pingTimer); this.pingTimer = null; }
+    if (this.joinGiveUp) { clearTimeout(this.joinGiveUp); this.joinGiveUp = null; }
+    if (this.lockTimer) { clearTimeout(this.lockTimer); this.lockTimer = null; }
+    if (this.exitTimer) { clearTimeout(this.exitTimer); this.exitTimer = null; }
+    if (this.copyTimer) { clearTimeout(this.copyTimer); this.copyTimer = null; }
+    if (this.ch) this.ch.unsubscribe();
+  }
 
   // ---- realtime ----
+  // A phone's clock is entirely snapshot-driven: the host ticks and
+  // broadcasts, the phone renders whatever number last arrived. So a dropped
+  // connection did not look like a dropped connection — it looked like a
+  // working game with 14 seconds left, forever, while the question ended on
+  // the TV without them. That is worse than an error screen, because the
+  // interface is lying about the one resource the whole game is built on.
+  //
+  // Two things fix it, and both are cheap: subscribe to the channel states
+  // that are not SUBSCRIBED, and remember when the last snapshot landed.
   openChannel(code, role) {
     if (!this.sb) return null;
     if (this.ch) { this.ch.unsubscribe(); this.ch = null; }
     const ch = this.sb.channel("loog-" + code, { config: { broadcast: { self: false } } });
     ch.on("broadcast", { event: "msg" }, ({ payload }) => this.onMsg(payload, role));
-    ch.subscribe((s) => { if (s === "SUBSCRIBED") { this.setState({ rt: "live" }); if (role === "player") this.send({ t: "hello", id: this.state.myId, name: this.state.myName }); } });
+    ch.subscribe((s) => {
+      if (s === "SUBSCRIBED") {
+        this.lastSnapAt = Date.now();
+        this.setState({ rt: "live", link: "live" });
+        if (role === "player") this.send({ t: "hello", id: this.state.myId, name: this.state.myName });
+        return;
+      }
+      // CHANNEL_ERROR / TIMED_OUT / CLOSED all previously fell on the floor.
+      if (s === "CHANNEL_ERROR" || s === "TIMED_OUT") this.setState({ rt: "reconnecting", link: "down" });
+      else if (s === "CLOSED") this.setState({ link: "down" });
+    });
     this.ch = ch;
     return ch;
   }
   send(payload) { if (this.ch) this.ch.send({ type: "broadcast", event: "msg", payload }); }
+
+  // Every snapshot is a heartbeat. The host broadcasts once a second during a
+  // question, so silence for three seconds means the link is gone, not that
+  // nothing happened. Checked on the render tick rather than by a timer of
+  // its own, because there is already a 1Hz clock running.
+  linkIsStale() {
+    if (this.state.link === "down") return true;
+    if (!this.lastSnapAt) return false;
+    return Date.now() - this.lastSnapAt > 3000;
+  }
 
   onMsg(m, role) {
     if (role === "host") {
@@ -1651,13 +1569,98 @@ class Component extends DCLogic {
       if (m.t === "answer") this.hostAnswer(m.id, m.qIndex, m.opt);
       if (m.t === "cmd") this.hostCmd(m.id, m.c);
     } else {
-      if (m.t === "state") this.setState({ snap: m.s });
+      if (m.t === "state") {
+        this.lastSnapAt = Date.now();
+        // The room was found. Whatever the join screen was worrying about is
+        // now moot, and the ping loop has done its job.
+        if (this.pingTimer) { clearInterval(this.pingTimer); this.pingTimer = null; }
+        this.setState({ snap: m.s, link: "live", joinSearch: "found" });
+      }
       if (m.t === "ping") this.send({ t: "hello", id: this.state.myId, name: this.state.myName });
+      // The room exists, it is just out of seats. Distinct from "no room".
+      if (m.t === "full" && m.id === this.state.myId) {
+        if (this.pingTimer) { clearInterval(this.pingTimer); this.pingTimer = null; }
+        if (this.joinGiveUp) { clearTimeout(this.joinGiveUp); this.joinGiveUp = null; }
+        this.setState({ joinSearch: "full" });
+      }
     }
   }
 
   // ---- navigation ----
-  goHome = () => { this.stopClock(); this.clearDemo(); this.stopIntroVo(); this.stopRevealVo(); if (this.pingTimer) { clearInterval(this.pingTimer); this.pingTimer = null; } this.answeredFor = null; if (this.ch) { this.ch.unsubscribe(); this.ch = null; } this.setState({ screen: "home", phase: "lobby", players: [], answers: {}, questions: [], qIndex: 0, revealCount: 0, snap: null, commishId: "" }); };
+  goHome = () => {
+    this.stopClock(); this.clearDemo(); this.stopIntroVo(); this.stopRevealVo();
+    if (this.pingTimer) { clearInterval(this.pingTimer); this.pingTimer = null; }
+    if (this.joinGiveUp) { clearTimeout(this.joinGiveUp); this.joinGiveUp = null; }
+    this.answeredFor = null;
+    if (this.ch) { this.ch.unsubscribe(); this.ch = null; }
+    this.setState({ screen: "home", phase: "lobby", players: [], answers: {}, questions: [], qIndex: 0, revealCount: 0, snap: null, commishId: "", exitArmed: false, joinSearch: "", link: "" });
+  };
+
+  // ── Exit ─────────────────────────────────────────────────────────────────
+  // This is a 12px button in the corner of a screen that is often a shared
+  // laptop or a TV browser someone else is navigating, and it used to wipe a
+  // live game — players, scores, questions, room code — on one click, with no
+  // confirm and nothing persisted. goHost then minted a fresh code, so all
+  // eleven phones were orphaned on a room that no longer existed.
+  //
+  // In the lobby it stays a plain Exit, because there is nothing to lose. In
+  // any other phase it arms first: one click says "End the game?", a second
+  // within ARM_MS does it, and anything else disarms. A two-step button
+  // rather than confirm() because a modal dialog on a television is worse
+  // than the problem, and because confirm() blocks the clock interval.
+  exitTap = () => {
+    if (this.state.phase === "lobby") return this.goHome();
+    if (this.state.exitArmed) { this.clearSession(); return this.goHome(); }
+    this.setState({ exitArmed: true });
+    if (this.exitTimer) clearTimeout(this.exitTimer);
+    this.exitTimer = setTimeout(() => { this.exitTimer = null; this.setState({ exitArmed: false }); }, 4000);
+  };
+
+  // ── Session persistence ──────────────────────────────────────────────────
+  // Written on every broadcast, which is once a second during a question and
+  // on every phase change. That is cheap — it is one small JSON blob — and it
+  // means the recoverable unit is the last second of the game rather than the
+  // last thing anyone remembered to save. Covers the tab crash too, which
+  // previously had no mitigation at all.
+  saveSession() {
+    if (this.state.screen !== "host") return;
+    try {
+      localStorage.setItem(RESUME_KEY, JSON.stringify({
+        at: Date.now(), code: this.state.code, phase: this.state.phase,
+        qIndex: this.state.qIndex, questions: this.state.questions,
+        players: this.state.players, answers: this.state.answers,
+        revealCount: this.state.revealCount, commishId: this.state.commishId
+      }));
+    } catch (e) {}
+  }
+  clearSession() { try { localStorage.removeItem(RESUME_KEY); } catch (e) {} }
+  readSession() {
+    try {
+      const raw = localStorage.getItem(RESUME_KEY);
+      if (!raw) return null;
+      const s = JSON.parse(raw);
+      if (!s || !s.code || typeof s.at !== "number") return null;
+      if (Date.now() - s.at > RESUME_MAX_AGE_MS) { this.clearSession(); return null; }
+      return s;
+    } catch (e) { return null; }
+  }
+  resumeHost = () => {
+    const s = this.readSession();
+    if (!s) return this.setState({ resume: null });
+    this.armIntroVo(); this.armRevealVo();
+    this.setState({
+      screen: "host", code: s.code, phase: s.phase, qIndex: s.qIndex,
+      questions: s.questions || [], players: s.players || [], answers: s.answers || {},
+      revealCount: s.revealCount || 0, commishId: s.commishId || "", exitArmed: false
+    }, () => {
+      this.openChannel(s.code, "host");
+      // Resuming mid-question restarts that question's clock rather than
+      // trying to reconstruct a partial one — the room has been staring at a
+      // dead screen anyway, and a full thirty seconds is the fair call.
+      if (s.phase === "question") this.beginQuestion(s.qIndex);
+      else this.broadcast();
+    });
+  };
   goPool = () => this.setState({ screen: "pool" });
   goJoin = () => this.setState({ screen: "join" });
   // ---- the kickoff voice-over ----
@@ -1714,24 +1717,43 @@ class Component extends DCLogic {
   }
 
   goHost = () => {
-    const code = Array.from({ length: 4 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ"[Math.floor(Math.random() * 24)]).join("");
+    const code = Array.from({ length: 4 }, () => CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)]).join("");
     this.armIntroVo();
     this.armRevealVo();
     this.setState({ screen: "host", code, phase: "lobby", players: [], answers: {}, questions: [], qIndex: 0, revealCount: 0, commishId: "" }, () => this.openChannel(code, "host"));
   };
 
   // ---- join ----
-  onJoinCode = (e) => this.setState({ joinCode: e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4) });
-  onJoinName = (e) => this.setState({ joinName: e.target.value.slice(0, 18) });
+  // The filter has to match CODE_ALPHABET, not just A-Z. Codes are minted
+  // without I or O so they cannot be misread as 1 and 0 from across a room —
+  // but the input accepted all 26, so "IOWA" was a perfectly well-formed
+  // code that could never match a room, and nothing on the screen said so.
+  // Dropping the two letters as they are typed is quieter than an error.
+  onJoinCode = (e) => this.setState({
+    joinCode: e.target.value.toUpperCase().replace(CODE_REJECT_RE, "").slice(0, 4)
+  });
+  onJoinName = (e) => this.setState({ joinName: clip(e.target.value, 18) });
+  // enterkeyhint promised a Go key on iOS and there was no handler behind it,
+  // which is worse than promising nothing.
+  onJoinKey = (e) => { if (e.key === "Enter") { e.preventDefault(); this.submitJoin(); } };
   submitJoin = () => {
     const code = this.state.joinCode.trim().toUpperCase(), name = this.state.joinName.trim();
     if (code.length !== 4) return this.setState({ joinNote: "Room codes are four letters.", joinBad: true });
     if (!name) return this.setState({ joinNote: "We need a name for the draft board.", joinBad: true });
     const id = deviceId();
     try { localStorage.setItem("loog.name", name); } catch (e) {}
-    this.setState({ screen: "player", code, myId: id, myName: name, joinNote: "", joinBad: false, snap: null }, () => {
+    this.setState({ screen: "player", code, myId: id, myName: name, joinNote: "", joinBad: false, snap: null, joinSearch: "looking" }, () => {
       this.openChannel(code, "player");
-      this.pingTimer = setInterval(() => { if (!this.state.snap) this.send({ t: "hello", id, name }); else clearInterval(this.pingTimer); }, 1500);
+      // The ping keeps running either way — a host who boots late still
+      // catches this player. What changes is that after JOIN_GIVEUP_MS of
+      // silence the screen stops pretending and says the room is not there.
+      // It used to say "Finding the huddle…" until the phone died.
+      this.pingTimer = setInterval(() => { if (!this.state.snap) this.send({ t: "hello", id, name }); }, 1500);
+      if (this.joinGiveUp) clearTimeout(this.joinGiveUp);
+      this.joinGiveUp = setTimeout(() => {
+        this.joinGiveUp = null;
+        if (!this.state.snap) this.setState({ joinSearch: "missing" });
+      }, JOIN_GIVEUP_MS);
     });
   };
 
@@ -1753,6 +1775,10 @@ class Component extends DCLogic {
       this.broadcast();
       return;
     }
+    // Twelve seats, and the cap has to be enforced here rather than only in
+    // addDemo. A thirteenth phone used to join silently, break the fixed
+    // draft grid, and make the lobby offer "-1 more can still join".
+    if (players.length >= MAX_PLAYERS) { this.send({ t: "full", id }); return; }
     // Ids are random now, so two people really can share a display name where
     // they used to collide into one row. Disambiguate rather than merge.
     let label = name;
@@ -1762,7 +1788,7 @@ class Component extends DCLogic {
   }
   addDemo = () => {
     const players = this.state.players.slice();
-    DEMO_NAMES.forEach((n) => { if (players.length < 12 && !players.some((p) => p.name === n)) players.push({ id: "d_" + n, name: n, score: 0, timeMs: 0, demo: true }); });
+    DEMO_NAMES.forEach((n) => { if (players.length < MAX_PLAYERS && !players.some((p) => p.name === n)) players.push({ id: "d_" + n, name: n, score: 0, timeMs: 0, demo: true }); });
     this.setState({ players }, this.broadcast);
   };
   // The commissioner takes the remote by tapping their own name once in the
@@ -1930,6 +1956,10 @@ class Component extends DCLogic {
     this.runReveal();
   };
 
+  skipRevealKey = (e) => {
+    if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") { e.preventDefault(); this.skipRevealHold(); }
+  };
+
   ranked() {
     return this.state.players.slice().sort((a, b) => b.score - a.score || a.timeMs - b.timeMs || a.name.localeCompare(b.name));
   }
@@ -1952,6 +1982,7 @@ class Component extends DCLogic {
       revealed, draftTotal: this.state.players.length
     };
     this.send({ t: "state", s });
+    this.saveSession();
   };
   fastest() {
     const i = this.state.qIndex, q = this.state.questions[i]; if (!q) return null;
@@ -1962,13 +1993,33 @@ class Component extends DCLogic {
   }
 
   // ---- player actions ----
+  // The tap used to be final the instant it happened, and optimistic on top
+  // of that: the status line said "Card in" whether or not the broadcast ever
+  // landed, so a dropped packet and a successful answer looked identical
+  // while permanently costing a draft slot.
+  //
+  // Now a tap opens a window instead of closing one. For CHANGE_MS the pick
+  // is provisional and re-tappable; after that it locks. The lock is still
+  // local — the host is the authority and rejects duplicates — but the phone
+  // no longer claims the answer arrived until answeredIds says it did.
   answer(k) {
     const s = this.state.snap; if (!s || s.phase !== "question") return;
-    if (this.answeredFor === s.qIndex) return;
-    this.answeredFor = s.qIndex;
+    if (this.answeredFor === s.qIndex) return;              // already locked
+    this.pendingFor = s.qIndex;
     this.myPick = k;
     this.send({ t: "answer", id: this.state.myId, qIndex: s.qIndex, opt: k, at: new Date().toISOString() });
+    if (this.lockTimer) clearTimeout(this.lockTimer);
+    this.lockTimer = setTimeout(() => {
+      this.lockTimer = null;
+      if (this.pendingFor === s.qIndex) { this.answeredFor = s.qIndex; this.forceUpdate(); }
+    }, CHANGE_MS);
     this.forceUpdate();
+  }
+  // True once the host has actually counted this phone's card for the
+  // current question. This is the only honest "it arrived" signal there is.
+  answerAcked() {
+    const s = this.state.snap;
+    return !!(s && s.answeredIds && s.answeredIds.indexOf(this.state.myId) !== -1);
   }
 
   // ---- share ----
@@ -1978,9 +2029,11 @@ class Component extends DCLogic {
       .concat(order.map((p, k) => `Pick ${k + 1}. ${p.name} \u2014 ${pts(p.score)} (${(p.timeMs / 1000).toFixed(1)}s)`))
       .concat(["", "Ties broken by cumulative time on correct answers."]).join("\n");
   }
+  copyShareTap = (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.copyShare(); };
+  downloadCardTap = (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.downloadCard(); };
   copyShare = () => {
     const t = this.shareText();
-    const done = () => { this.setState({ copied: true }); setTimeout(() => this.setState({ copied: false }), 2200); };
+    const done = () => { this.setState({ copied: true }); if (this.copyTimer) clearTimeout(this.copyTimer); this.copyTimer = setTimeout(() => { this.copyTimer = null; this.setState({ copied: false }); }, 2200); };
     if (navigator.clipboard) navigator.clipboard.writeText(t).then(done, done); else done();
   };
   downloadCard = () => {
@@ -2049,8 +2102,18 @@ class Component extends DCLogic {
         ((sc === "host" && (st.phase === "lobby" || st.phase === "reveal"))
           || (sc === "home" && st.tvSized)),
       goHome: this.goHome, goPool: this.goPool, goJoin: this.goJoin, goHost: this.goHost,
-      rtLabel: st.rt === "live" ? "connected to Supabase" : st.rt,
+      resumeHost: this.resumeHost,
+      hasResume: !!(st.resume && st.resume.code),
+      resumeLabel: st.resume ? `Resume room ${st.resume.code}` : "",
+      resumeNote: st.resume ? `${(st.resume.players || []).length} on the roster \u00b7 ${st.resume.phase === "lobby" ? "still in the lobby" : st.resume.phase === "reveal" ? "at the draft board" : `question ${(st.resume.qIndex || 0) + 1}`}` : "",
+      // "unavailable — demo mode only" is a developer's sentence. What the
+      // room needs to know is whether phones can reach this screen.
+      rtLabel: st.rt === "live" ? "phones can join"
+        : st.rt === "reconnecting" ? "reconnecting"
+        : st.rt === "connecting" ? "connecting"
+        : "offline. This device can host a practice game only",
       joinCode: st.joinCode, joinName: st.joinName, onJoinCode: this.onJoinCode, onJoinName: this.onJoinName,
+      onJoinKey: this.onJoinKey,
       submitJoin: this.submitJoin, joinNote: st.joinNote,
 
       joinNoteColor: st.joinBad ? "var(--color-penalty)" : "var(--color-muted)",
@@ -2061,7 +2124,9 @@ class Component extends DCLogic {
       quickJoin: this.submitJoin,
       poolRows: TIERS.map((t) => {
         const house = (leaguePool()[t.key] || []).length;
-        return { label: t.label, fg: t.fg, points: t.points,
+        // fg paints the border, ink paints the text: TE and QB are under 4.5:1
+        // as type on --color-surface, which is what a pool card is.
+        return { label: t.label, fg: t.fg, ink: t.ink, points: t.points,
                  count: POOL[t.key].length + house, house };
       })
     };
@@ -2080,40 +2145,91 @@ class Component extends DCLogic {
       v.pResults = phase === "results";
       v.pFinal = phase === "reveal";
       if (v.pWaiting) {
+        v.pWaitDot = "var(--color-accent)";
+        v.pWaitTitleColor = "var(--color-text)";
+        v.pWaitRules = "";
+        v.pWaitRetry = false;
         if (s && phase === "intro") {
           v.pWaitTitle = "Eyes up.";
           v.pWaitBody = "Kickoff is on the big screen. First question lands in a second.";
+        } else if (s) {
+          v.pWaitTitle = "You're on the roster.";
+          v.pWaitBody = `${s.playerCount} on the roster. Kickoff when the commissioner says go.`;
+          // The only stretch of the night with unlimited time and everyone's
+          // full attention. It used to be a player count and nothing else.
+          v.pWaitRules = "Twelve questions, thirty seconds each. Easy 1pt \u00b7 Medium 2 \u00b7 Hard 3 \u00b7 Brutal 4, so the back half is worth double the front. Fastest correct answers break ties.";
+        } else if (st.joinSearch === "full") {
+          v.pWaitDot = "var(--color-penalty)";
+          v.pWaitTitleColor = "var(--color-penalty)";
+          v.pWaitTitle = "Roster's full.";
+          v.pWaitBody = `Room ${st.code} already has ${MAX_PLAYERS} in. Somebody has to drop for you to get in.`;
+          v.pWaitRetry = true;
+        } else if (st.joinSearch === "missing") {
+          // Six seconds of silence is a wrong code, not a slow network. The
+          // ping keeps going in the background, so a host booting late still
+          // pulls this player in and the screen flips back on its own.
+          v.pWaitDot = "var(--color-penalty)";
+          v.pWaitTitleColor = "var(--color-penalty)";
+          v.pWaitTitle = `No room ${st.code} on the air.`;
+          v.pWaitBody = "Check the four letters on the TV. Still looking in case the host is only just starting up.";
+          v.pWaitRetry = true;
         } else {
-          v.pWaitTitle = s ? "You're on the roster." : "Finding the huddle\u2026";
-          v.pWaitBody = s ? `${s.playerCount} on the roster. Kickoff when the commissioner says go.` : `Make sure the host screen shows ${st.code}.`;
+          v.pWaitTitle = "Finding the huddle\u2026";
+          v.pWaitBody = `Make sure the host screen shows ${st.code}.`;
         }
       }
       if (v.pQuestion) {
         const t = this.tierOf(s.tier);
-        v.tierLabel = t.label; v.tierPoints = t.points; v.tierFg = t.fg;
-        const ppct = Math.round((s.secondsLeft / QUESTION_SECONDS) * 100);
-        v.clock = mmss(s.secondsLeft); v.clockPct = ppct;
-        v.runnerLeft = "calc(" + ppct + "% - 15px)";
-        v.clockColor = s.secondsLeft <= 10 ? "#fff" : "var(--onair-ink)";
-        v.clockGlow = s.secondsLeft <= 10 ? "rgba(212,24,24,.75)" : "rgba(212,24,24,.35)";
-        v.clockBorder = s.secondsLeft <= 10 ? "var(--color-onair)" : "#3a1620";
-        v.clockAnim = s.secondsLeft <= 5 ? "lofgClock .5s steps(1,end) infinite" : "none";
+        v.tierLabel = t.label; v.tierPoints = t.points; v.tierFg = t.fg; v.tierInk = t.ink;
+        const stale = this.linkIsStale();
+        const frac = Math.max(0, Math.min(1, s.secondsLeft / QUESTION_SECONDS));
+        v.clock = mmss(s.secondsLeft);
+        // scaleX off a full-width track, and translateX off the left edge:
+        // both composited, where `width` and `left` forced a layout pass every
+        // second for thirty seconds, twelve times a night.
+        v.clockFrac = frac.toFixed(3);
+        v.runnerShift = "calc(" + (frac * 100).toFixed(2) + "vw - 15px)";
+        // A frozen clock that still looks live is the lie. Once the link is
+        // stale the numeral goes grey, the blink stops, and the status line
+        // says what is actually happening.
+        v.clockColor = stale ? "var(--color-muted)" : (s.secondsLeft <= 10 ? "#fff" : "var(--onair-ink)");
+        v.clockGlow = stale ? "transparent" : (s.secondsLeft <= 10 ? "rgba(212,24,24,.75)" : "rgba(212,24,24,.35)");
+        v.clockBorder = stale ? "var(--color-line)" : (s.secondsLeft <= 10 ? "var(--color-onair)" : "var(--color-clock-idle)");
+        v.clockAnim = (!stale && s.secondsLeft <= 5) ? "lofgClock .5s steps(1,end) infinite" : "none";
         v.qText = s.qText;
         const locked = this.answeredFor === s.qIndex;
+        const pending = this.pendingFor === s.qIndex && !locked;
+        const acked = this.answerAcked();
         v.pOptions = s.options.map((text, k) => {
-          const mine = locked && this.myPick === k;
+          const mine = (locked || pending) && this.myPick === k;
+          const dim = locked && !mine;
           return {
             text, letter: "ABCD"[k], onTap: () => this.answer(k),
+            // A tick, not just a colour \u2014 the selection used to be carried
+            // entirely by hue, which fails WCAG 1.4.1 on the primary action.
+            mark: mine ? "\u2713" : "ABCD"[k],
+            pressed: mine ? "true" : "false",
+            state: mine ? (acked ? "In" : "Sending") : "",
             border: mine ? "var(--color-accent)" : "var(--color-line)",
             bg: mine ? "color-mix(in srgb,var(--color-accent) 18%,transparent)" : "var(--color-surface)",
-            fg: locked && !mine ? "color-mix(in srgb,var(--color-text) 40%,transparent)" : "var(--color-text)",
+            // 40% text on this ground is 3.5:1. Large bold text scrapes past
+            // the 3:1 bar, but --color-muted is 6.7 and says "not yours" just
+            // as clearly, so there is no reason to sit on the line.
+            fg: dim ? "var(--color-muted)" : "var(--color-text)",
             badgeBg: mine ? "var(--color-accent-500)" : "var(--color-accent-900)",
             badgeFg: mine ? "var(--color-bg)" : "var(--color-accent-200)",
-            rail: mine ? "var(--color-accent)" : "#2b3d59"
+            rail: mine ? "var(--color-accent)" : "var(--color-line-strong)"
           };
         });
-        v.pStatus = locked ? `Card in \u00b7 ${s.answeredCount} of ${s.playerCount} turned in` : "Make the call.";
-        v.pStatusColor = locked ? "var(--color-accent-300)" : "color-mix(in srgb,var(--color-text) 45%,transparent)";
+        // "Card in" used to show whether or not the broadcast ever landed.
+        // Now it only says that once the host has counted the card.
+        v.pStatus = stale ? "Reconnecting \u2014 the clock is still running on the TV."
+          : pending ? "Tap again to change it."
+          : locked ? (acked ? `Card in \u00b7 ${s.answeredCount} of ${s.playerCount} turned in` : "Sending your card\u2026")
+          : "Make the call.";
+        v.pStatusColor = stale ? "var(--color-penalty)"
+          : (locked && acked) ? "var(--color-accent-300)"
+          : "var(--color-muted)";
       }
       if (v.pResults) {
         const mine = s.myAnswers ? s.myAnswers[st.myId] : null;
@@ -2122,13 +2238,54 @@ class Component extends DCLogic {
         v.pVerdictColor = right ? "var(--color-accent-300)" : "var(--color-penalty)";
         v.correctText = s.options[s.correct];
         v.pTimeNote = mine ? `You answered in ${fmt(mine.ms)}` + (s.fastest ? ` \u00b7 fastest was ${s.fastest.name} at ${fmt(s.fastest.ms)}` : "") : "The clock beat you.";
-        v.miniBoard = (s.board || []).slice(0, 6).map((b) => ({
+
+        // \u2500\u2500 The board, and your place on it \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+        // This was `slice(0, 6)`, so anyone ranked 7th or worse looked at a
+        // list that did not contain them. The people with the least reason
+        // to keep playing were the exact set the screen stopped addressing.
+        const board = s.board || [];
+        const meRow = board.find((b) => b.id === st.myId);
+        const top = board.slice(0, 5);
+        const rows = top.slice();
+        let gapAt = -1;
+        if (meRow && !top.some((b) => b.id === st.myId)) {
+          gapAt = rows.length;               // "\u00b7\u00b7\u00b7" between 5th and you
+          rows.push(meRow);
+        }
+        v.miniBoard = rows.map((b, i) => ({
           rank: b.rank, name: b.name, score: b.score, speed: (b.timeMs / 1000).toFixed(1) + "s",
-          rowBg: b.id === st.myId ? "color-mix(in srgb,var(--color-accent) 14%,transparent)" : "transparent"
+          gap: i === gapAt,
+          rowBg: b.id === st.myId ? "color-mix(in srgb,var(--color-accent) 14%,transparent)" : "transparent",
+          rowRing: b.id === st.myId ? "inset 0 0 0 1px var(--color-accent-700)" : "none"
         }));
+
+        // Brutal is worth four times Easy and nothing ever said so, so a bad
+        // run at question nine read as elimination while a comeback was still
+        // arithmetically live. Count what is actually left on the board.
+        const leader = board[0];
+        const behind = meRow && leader ? leader.score - meRow.score : 0;
+        let remaining = 0;
+        for (let i = s.qIndex + 1; i < (s.total || 12); i++) {
+          const q = st.questions[i];
+          remaining += q ? this.tierOf(q.tier).points : 0;
+        }
+        // The player's device has no question list \u2014 only the host does \u2014 so
+        // fall back to the tier ramp's own average when the detail is absent.
+        if (!remaining && s.qIndex + 1 < (s.total || 12)) remaining = ((s.total || 12) - s.qIndex - 1) * 2.5;
+        v.pStanding = !meRow ? ""
+          : behind === 0 ? (board.length > 1 ? "You're on top. Twelve picks says hold it." : "")
+          : remaining >= behind
+            ? `${behind} back \u00b7 ${Math.round(remaining)} still on the board.`
+            : `${behind} back \u00b7 ${Math.round(remaining)} left. Play spoiler.`;
       }
       const isCommish = !!s && s.commishId === st.myId;
-      v.pCommish = isCommish && (phase === "lobby" || phase === "question" || phase === "results");
+      // During a question the whistle used to render 54px below option D, in
+      // the same non-scrolling column — five tap targets at a decision point,
+      // one of which ends the question for the whole room. It now waits until
+      // the commissioner has turned in their own card, which is both safer
+      // and the right order of operations anyway.
+      const commishArmed = phase !== "question" || this.answeredFor === s.qIndex || this.pendingFor === s.qIndex;
+      v.pCommish = isCommish && commishArmed && (phase === "lobby" || phase === "question" || phase === "results");
       if (v.pCommish) {
         v.cmdLabel = phase === "lobby"
           ? `Kick off · ${s.playerCount} in`
@@ -2147,6 +2304,17 @@ class Component extends DCLogic {
         const revealedMine = me2 && me2.rank >= shown + 1;
         v.myPickLabel = revealedMine ? "Pick " + me2.rank : "\u2014";
         v.myFinalNote = !me2 ? "Watch the big screen." : revealedMine ? `${pts(me2.score)} \u00b7 ${(me2.timeMs / 1000).toFixed(1)}s on correct answers \u00b7 ${ordinal(me2.rank)} place` : "Watch the big screen. Picks are coming out from the bottom.";
+        // Worst-to-first means last place is announced first, alone, in front
+        // of everyone \u2014 and their phone gave them the winner's typography
+        // with the meaning flipped and nothing else. In a snake draft the
+        // last seat is also the first seat of round two, back-to-back at the
+        // turn. The consolation was in the format the whole time.
+        v.myTurnNote = "";
+        if (revealedMine && SNAKE_DRAFT && me2.rank === total && total > 1) {
+          v.myTurnNote = `And pick ${total + 1}. Back-to-back at the turn.`;
+        } else if (revealedMine && me2.rank === 1) {
+          v.myTurnNote = "First off the board.";
+        }
       }
       return v;
     }
@@ -2174,7 +2342,14 @@ class Component extends DCLogic {
         v.introChampionLabel = DEFENDING_CHAMPION_LABEL;
       }
       v.playerCount = st.players.length;
-      v.hostMeta = st.phase === "lobby" ? `${st.players.length} players \u00b7 room ${st.code}` : `Room ${st.code} \u00b7 ${st.players.length} players`;
+      // One word order, in a fixed corner slot, in every phase. It used to
+      // flip between "12 players · room ABCD" and "Room ABCD · 12 players".
+      v.hostMeta = `Room ${st.code} \u00b7 ${st.players.length} ${st.players.length === 1 ? "player" : "players"}`;
+      v.exitTap = this.exitTap;
+      v.exitLabel = st.phase === "lobby" ? "Exit" : st.exitArmed ? "End the game?" : "End the game";
+      v.exitBg = st.exitArmed ? "var(--color-onair)" : "none";
+      v.exitBorder = st.exitArmed ? "var(--color-onair)" : "var(--color-line)";
+      v.exitColor = st.exitArmed ? "#fff" : "var(--color-muted-strong)";
       const cid = st.commishId;
       v.lobbyPlayers = st.players.map((p) => ({
         name: p.name, tag: p.id === cid ? "Remote" : "",
@@ -2192,7 +2367,9 @@ class Component extends DCLogic {
         ? "Waiting on the first check-in."
         : cName
           ? `${cName} runs the game from their phone. Tap their name again to take the remote back. Whistle and next-question still work here as a backup.`
-          : `${12 - st.players.length} more can still join. Tap a name above to hand over the remote.`;
+          : st.players.length >= MAX_PLAYERS
+            ? "Roster's full. Tap a name above to hand over the remote."
+            : `${MAX_PLAYERS - st.players.length} more can still join. Tap a name above to hand over the remote.`;
       const local = location.protocol === "file:" || !location.host;
       v.hasQr = !local && !st.qrFail;
       v.qrNote = local
@@ -2200,28 +2377,31 @@ class Component extends DCLogic {
         : st.qrFail
           ? "This page's web address is too long to fit in a QR code. Host it at a shorter link and the code appears here."
           : "Point a phone camera at the code to jump straight to the join screen.";
+      v.qrAlt = `QR code to join room ${st.code}`;
       v.startGame = this.startGame; v.addDemo = this.addDemo;
       v.joinLine = (location.host || "") + this.joinBase() + "#" + st.code;
       v.endQuestion = this.endQuestion; v.nextQuestion = this.nextQuestion;
       if (q) {
         const t = this.tierOf(q.tier);
-        v.tierLabel = t.label; v.tierPoints = t.points; v.tierFg = t.fg;
-        v.qNum = st.qIndex + 1; v.qText = q.text;
+        v.tierLabel = t.label; v.tierPoints = t.points; v.tierFg = t.fg; v.tierInk = t.ink;
+        v.qNum = st.qIndex + 1; v.qTotal = st.questions.length || 12; v.qText = q.text;
         v.hOptions = q.options.map((text, k) => ({ text, letter: "ABCD"[k] }));
         v.correctText = q.options[q.correct];
-        const pct = Math.round((st.secondsLeft / QUESTION_SECONDS) * 100);
+        const frac = Math.max(0, Math.min(1, st.secondsLeft / QUESTION_SECONDS));
         v.clock = mmss(st.secondsLeft);
-        v.clockPct = pct;
-        v.runnerLeft = "calc(" + pct + "% - 30px)";
+        v.clockFrac = frac.toFixed(3);
+        // The bar is 100% of the host column, so its own width is the unit
+        // both the playhead and the runner travel in.
+        v.playheadShift = "calc(" + (frac * 100).toFixed(2) + "vw)";
+        v.runnerShift = "calc(" + (frac * 100).toFixed(2) + "vw - 30px)";
         v.clockColor = st.secondsLeft <= 10 ? "#fff" : "var(--onair-ink)";
         v.clockGlow = st.secondsLeft <= 10 ? "rgba(212,24,24,.75)" : "rgba(212,24,24,.35)";
-        v.clockBorder = st.secondsLeft <= 10 ? "var(--color-onair)" : "#3a1620";
+        v.clockBorder = st.secondsLeft <= 10 ? "var(--color-onair)" : "var(--color-clock-idle)";
         v.clockAnim = st.secondsLeft <= 5 ? "lofgClock .5s steps(1,end) infinite" : "none";
-        v.downLabel = ["1st & 10", "2nd & 7", "3rd & 4", "4th & goal"][st.qIndex % 4];
         v.answeredLabel = Object.keys(row).length + "/" + st.players.length;
         v.answerPips = st.players.map((p) => {
           const done = !!row[p.id];
-          return { name: p.name, bg: done ? "var(--color-accent-900)" : "transparent", fg: done ? "var(--color-accent-200)" : "color-mix(in srgb,var(--color-text) 38%,transparent)", border: done ? "var(--color-accent-700)" : "var(--color-line)" };
+          return { name: p.name, bg: done ? "var(--color-accent-900)" : "transparent", fg: done ? "var(--color-accent-200)" : "var(--color-muted)", border: done ? "var(--color-accent-700)" : "var(--color-line)" };
         });
         const f = this.fastest();
         v.fastestLabel = f ? `${f.name} \u00b7 ${fmt(f.ms)}` : "Nobody moved the ball.";
@@ -2242,7 +2422,7 @@ class Component extends DCLogic {
           : solo
             ? `Only ${solo.name} blew it. Everyone look.`
             : nWrong === 1 ? "One casualty." : `${nWrong} of you should be ashamed.`;
-        v.nextLabel = st.qIndex + 1 >= st.questions.length ? "Reveal the draft order" : `Next question (${st.qIndex + 2} of 12)`;
+        v.nextLabel = st.qIndex + 1 >= st.questions.length ? "Reveal the draft order" : `Next question (${st.qIndex + 2} of ${st.questions.length})`;
       }
       v.board = order.map((p, k) => ({
         rank: k + 1, name: p.name, score: p.score, speed: (p.timeMs / 1000).toFixed(1) + "s",
@@ -2263,19 +2443,21 @@ class Component extends DCLogic {
             pick: "Pick " + pick, pickNum: String(pick).padStart(2, "0"), round: pick <= 6 ? "Round 1 \u00b7 early" : "Round 1 \u00b7 late", name: shown ? p.name : onClock ? "ON THE CLOCK" : "",
             detail: shown ? `${pts(p.score)} \u00b7 ${(p.timeMs / 1000).toFixed(1)}s` : "",
             bg: first ? "color-mix(in srgb,var(--color-accent) 18%,transparent)" : shown ? "var(--color-surface)" : onClock ? "color-mix(in srgb,var(--color-onair) 12%,transparent)" : "color-mix(in srgb, var(--color-text) 2%, transparent)",
-            border: first ? "var(--color-accent)" : shown ? "var(--color-line)" : onClock ? "var(--color-onair)" : "#161c2b",
+            border: first ? "var(--color-accent)" : shown ? "var(--color-line)" : onClock ? "var(--color-onair)" : "var(--color-row-inert)",
             opacity: shown ? 1 : onClock ? 0.85 : 0.3,
             anim: shown ? "lofgSlam .5s ease-out" : onClock ? "lofgPulse 1.4s ease-in-out infinite" : "none",
             pickColor: first ? "var(--color-accent-200)" : "color-mix(in srgb,var(--color-text) 45%,transparent)",
             nameColor: shown ? "var(--color-text)" : "var(--onair-ink)"
           };
         });
-        v.revealFoot = revealed >= total ? "Ties broken by cumulative time on correct answers. Copy the order or download the card." : "One pick every few seconds, worst to first.";
+        v.revealFoot = revealed >= total ? "Copy the order or download the card." : "One pick every few seconds, worst to first.";
         v.copyShare = this.copyShare; v.downloadCard = this.downloadCard;
+        // Wrapped so using them does not also cut the reveal read short.
+        v.copyShareTap = this.copyShareTap; v.downloadCardTap = this.downloadCardTap;
         v.copyLabel = st.copied ? "Copied" : "Copy draft order";
         // A no-op once the order is moving, so a click on Copy or Download at
         // the end cannot be swallowed by the board's own handler.
-        v.skipRevealHold = this.skipRevealHold;
+        v.skipRevealHold = this.skipRevealHold; v.skipRevealKey = this.skipRevealKey;
       }
       return v;
     }

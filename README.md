@@ -42,16 +42,48 @@ reveal-vo.mp3           Sterling reads the close over the held draft board
 
 | Lines | What |
 |---|---|
-| ~15–60 | `@font-face` for Barlow Condensed + JetBrains Mono |
-| ~68–360 | Nocturne base tokens and component classes (the artifact scaffold) |
-| ~363–500 | **Draft Night Broadcast** — the league's design system, overriding the above |
-| ~500–1000 | Markup for all five screens (home, pool, join, player, host) |
-| ~1000+ | Game logic and the view model, in a `<script type="text/x-dc">` |
+| ~18–73 | `@font-face` for Barlow Condensed + JetBrains Mono |
+| ~77–590 | **Draft Night Broadcast** — the league's design system. The only token block. |
+| ~590–1110 | Markup for all five screens (home, pool, join, player, host) |
+| ~1110+ | Game logic and the view model, in a `<script type="text/x-dc">` |
+
+The generic Nocturne scaffold that used to sit between the faces and the
+design system is gone. It was ~290 lines of another product's buttons, cards,
+dialogs, tables and tonal ramps, fully overridden by the block below it, and
+it was still being served to twelve phones to style exactly one button. Two
+things in it were load-bearing and both moved into the Draft Night block: the
+`box-sizing` reset, and the pool screen's Back button, which is hand-styled
+now like every other control. If you are diffing against an older bundle,
+that deletion is most of the churn.
 
 Markup uses a small template DSL, not JSX: `<sc-if value="{{ x }}">`,
 `<sc-for list="{{ xs }}" as="x">`, `{{ interpolation }}`, and
 `sc-camel-on-click`. Colours in the view model are CSS variable references
 (`"var(--color-onair)"`), so retuning the token block retunes the whole app.
+
+One DSL trap worth knowing: `sc-camel-*` is compiled to a **camelCase React
+prop**, so `sc-camel-on-click` becomes `onClick` — correct for handlers, and
+wrong for ARIA. `aria-*` and `role` must be written plain (`aria-live="polite"`),
+because React renders those hyphenated and there is no camelCase form. An
+`sc-camel-aria-live` silently becomes an `ariaLive` prop that reaches nothing.
+
+## Accessibility
+
+The rules that are easy to undo by accident:
+
+- Every screen root is a `<main>` and carries exactly one `<h1>` — on the host
+  that is the room code in the lobby and the question during play.
+- The play clock is a `role="timer"`. The field bar underneath it is
+  `aria-hidden` because it is a *picture* of the clock, not a second fact, and
+  its yard numerals are decoration exempt from contrast rules.
+- An answer's selected state is carried by `aria-pressed` **and** a tick in the
+  letter badge, never by colour alone.
+- Quiet text uses `--color-muted` / `--color-muted-strong`. Do not reintroduce
+  ad-hoc `color-mix(var(--color-text) N%, transparent)` for type: everything
+  under about 48% lands below 4.5:1 on these grounds, which is what the whole
+  ladder used to do in 27 places.
+- Tier colours have a `-ink` twin for use as text. `--tier-hard` and
+  `--tier-brutal` miss 4.5:1 on `--color-surface`; the `-ink` values clear it.
 
 ## The house questions
 
@@ -117,7 +149,17 @@ fine under `http.server`.
 node test/qr.test.js        # QR encoder conformance
 node test/draw.test.js      # the kickoff draw and the house-question floor
 node test/reveal.test.js    # the reveal read's cue, against a virtual clock
+node test/failure.test.js   # the states that only exist when something breaks
 ```
+
+`failure.test.js` covers the paths nobody exercises in a quiet room on good
+wifi: the room-code alphabet agreeing with the join filter (they disagreed on
+I and O, so `IOWA` was a well-formed code that matched nothing), the give-up
+timer that stops a mistyped code stranding a player forever, staleness
+detection so a dropped link cannot render as a running clock, the phone board
+showing your own row when you are 7th of 12, grapheme-safe name truncation,
+and the twelve-seat cap on real joins. Every one of those shipped broken and
+stayed green under the other three suites.
 
 The QR encoder is hand-rolled (`src/vendor/qr.js`) and shipped broken for
 weeks: it wrote format information 4 bits away from any legal BCH(15,5)
