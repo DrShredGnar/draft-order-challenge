@@ -400,7 +400,7 @@ const maxSrc = lift(/const MAX_PLAYERS = \d+;/, 'MAX_PLAYERS');
 const { MAX_PLAYERS } = new Function(maxSrc + 'return { MAX_PLAYERS };')();
 
 check('real joins respect the same cap the demo roster does', () => {
-  const src = lift(/^  hostJoin\(id, name\) \{[\s\S]*?\n  \}$/m, 'hostJoin()');
+  const src = lift(/^  hostJoin\([^)]*\) \{[\s\S]*?\n  \}$/m, 'hostJoin()');
   assert(/players\.length >= MAX_PLAYERS/.test(src),
     'hostJoin has no cap; a thirteenth phone joins silently and breaks the draft grid');
   assert(/t: "full"/.test(src), 'the thirteenth player is turned away without being told');
@@ -540,9 +540,9 @@ check('no demo player can take the remote', () => {
 // Run the shipped hostJoin against stubs, rather than asserting on its text.
 // Source checks would pass on a version that computed the right thing and
 // never stored it.
-const hostJoinSrc = lift(/^  hostJoin\(id, name\) \{[\s\S]*?\n  \}$/m, 'hostJoin()')
-  .replace(/^  hostJoin\(id, name\)/, 'function hostJoin(id, name)');
-const hostJoin = new Function(commishSrc + 'const MAX_PLAYERS = 12;\n' + hostJoinSrc + 'return hostJoin;')();
+const hostJoinSrc = lift(/^  hostJoin\([^)]*\) \{[\s\S]*?\n  \}$/m, 'hostJoin()')
+  .replace(/^  hostJoin\(/, 'function hostJoin(');
+const hostJoin = new Function(commishSrc + 'const MAX_PLAYERS = 12;\nconst BUILD_ID = "testbuild";\n' + hostJoinSrc + 'return hostJoin;')();
 
 function room(players, commishId) {
   const self = {
@@ -557,28 +557,28 @@ const P = (name, id) => ({ id: id || ('id_' + name), name, score: 0, timeMs: 0, 
 
 check('typing "Rich" picks up the remote with nobody tapping anything', () => {
   const r = room([P('Dave'), P('Sully')]);
-  hostJoin.call(r, 'id_rich', 'Rich');
+  hostJoin.call(r, 'id_rich', 'Rich', 'testbuild');
   assert(r.state.commishId === 'id_rich',
     'Rich joined and the remote did not move to him; commishId is ' + JSON.stringify(r.state.commishId));
 });
 
 check('"Big Rich" checking in leaves the remote alone', () => {
   const r = room([P('Dave')]);
-  hostJoin.call(r, 'id_big', 'Big Rich');
+  hostJoin.call(r, 'id_big', 'Big Rich', 'testbuild');
   assert(r.state.commishId === '', 'Big Rich took the remote; commishId is ' + JSON.stringify(r.state.commishId));
 });
 
 check('the pickup never overrides a hand-off already made', () => {
   const r = room([P('Dave', 'id_dave')], 'id_dave');     // room already gave Dave the remote
-  hostJoin.call(r, 'id_rich', 'Rich');
+  hostJoin.call(r, 'id_rich', 'Rich', 'testbuild');
   assert(r.state.commishId === 'id_dave',
     'Rich checking in late silently took the remote off Dave');
 });
 
 check('a second "Rich" does not inherit the remote from the first', () => {
   const r = room([]);
-  hostJoin.call(r, 'id_rich1', 'Rich');
-  hostJoin.call(r, 'id_rich2', 'Rich');
+  hostJoin.call(r, 'id_rich1', 'Rich', 'testbuild');
+  hostJoin.call(r, 'id_rich2', 'Rich', 'testbuild');
   assert(r.state.commishId === 'id_rich1', 'the remote moved to the second Rich');
   assert(r.state.players[1].name === 'Rich (2)', 'the second Rich was not disambiguated');
 });
@@ -587,6 +587,77 @@ check('tapping a name still works in both directions', () => {
   const src = lift(/^  setCommish\(id\) \{[\s\S]*?\n  \}$/m, 'setCommish()');
   assert(/this\.state\.commishId === id \? "" : id/.test(src),
     'setCommish no longer toggles, so the remote cannot be handed back');
+});
+
+// ── a phone running last week's code ────────────────────────────────────────
+console.log('\nstale bundles');
+
+// This one is not hypothetical. A phone held a cached index.html across a
+// deploy and quietly ran the previous build all the way through a reveal,
+// with nothing on either device able to notice. Pages serves index.html with
+// cache-control: max-age=600, eleven people load it off one text message, and
+// a backgrounded mobile tab keeps its copy longer than that.
+check('the bundle carries a build stamp, and the marker is gone', () => {
+  const m = template.match(/const BUILD_ID = "([a-f0-9]+)";/);
+  assert(m, 'the built bundle has no BUILD_ID; nothing can detect a stale phone');
+  assert(m[1].length >= 6, 'the build id is too short to be worth comparing: ' + m[1]);
+  assert(!/\{\{__BUILD_ID__\}\}/.test(template),
+    'the build marker was never substituted — every device would compare equal by accident');
+});
+
+check('the id is a content hash, not a clock', () => {
+  // A timestamp would make every rebuild differ from the committed file and
+  // `build.py --check` could never pass, so this is load-bearing rather than
+  // stylistic. Verified by building the id twice from the same sources.
+  const { execFileSync } = require('child_process');
+  const run = () => execFileSync('python3', ['-c', 'import build; print(build.build_id())'],
+    { cwd: path.join(__dirname, '..'), encoding: 'utf8' }).trim();
+  const a = run(), b = run();
+  assert(a === b, 'the build id is not deterministic: ' + a + ' then ' + b);
+  assert(/^[a-f0-9]{8}$/.test(a), 'unexpected build id shape: ' + a);
+});
+
+check('the host stamps every snapshot and the phone compares it', () => {
+  assert(/build: BUILD_ID/.test(template), 'the snapshot does not carry the build id');
+  const src = lift(/v\.buildStale = .*$/m, 'buildStale');
+  assert(/s\.build !== BUILD_ID/.test(src), 'the phone never compares its build against the host');
+  // Before the first snapshot there is nothing to compare, and the join
+  // screen already owns that story — claiming staleness there would put a
+  // scary banner on every normal join.
+  assert(/!!\(s &&/.test(src), 'the banner would fire before any snapshot has arrived');
+});
+
+check('a phone from before this shipped still reads as stale', () => {
+  // Old bundles send a hello with no build field at all. undefined !== the
+  // current id, so they are caught — which is the whole point, since they are
+  // the oldest thing that can turn up.
+  const r = room([]);
+  hostJoin.call(r, 'id_old', 'Dave');                 // no build argument
+  assert(r.state.players[0].stale === true, 'a phone that reports no build is treated as current');
+});
+
+check('a phone on the same build is not nagged', () => {
+  const r = room([]);
+  hostJoin.call(r, 'id_ok', 'Dave', 'testbuild');
+  assert(r.state.players[0].stale === false, 'a matching build is being flagged as stale');
+});
+
+check('the commissioner is told in the lobby, while it can still be fixed', () => {
+  const src = lift(/v\.staleNote = [\s\S]*?;\n/, 'staleNote');
+  assert(/staleCount/.test(src), 'the lobby does not count out-of-date phones');
+  assert(/reload/i.test(src), 'the lobby note does not say what to do about it');
+  const tags = lift(/v\.lobbyPlayers = st\.players\.map\(\([\s\S]*?\n      \}\)\);/, 'lobbyPlayers');
+  assert(/Out of date/.test(tags), 'an out-of-date phone is not named on its own tile');
+  assert(/p\.stale && !p\.demo/.test(tags), 'demo players would be flagged as out of date');
+});
+
+check('the reload actually defeats the cache', () => {
+  const src = lift(/^  reloadPage = \(\) => \{[\s\S]*?\n  \};$/m, 'reloadPage()');
+  // location.reload(true) has been ignored by browsers for years; the only
+  // thing that reliably re-fetches is a different URL.
+  assert(!/location\.reload\(true\)/.test(src),
+    'reloadPage uses the forceGet argument, which every modern browser ignores');
+  assert(/searchParams\.set/.test(src), 'reloadPage does not bust the cache');
 });
 
 // ── the invite ──────────────────────────────────────────────────────────────
