@@ -1215,6 +1215,21 @@ const RESUME_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 // How many of each tier's three come from the league's own history. A floor,
 // not a quota — see drawQuestions.
 const LEAGUE_QUOTA = 1;
+// What the footer says for each realtime state. Every state the app can put
+// itself in has an entry here; see the RT_STATES test.
+//   connecting   still waiting for the vendored client to evaluate
+//   ready        client built, no channel yet — the home screen's resting state
+//   live         channel subscribed, phones are actually talking to this device
+//   reconnecting the channel dropped and is retrying
+//   offline      no client at all; the draw and a solo run still work
+const RT_LABEL = {
+  connecting: "connecting\u2026",
+  ready: "ready \u00b7 phones can join",
+  live: "live \u00b7 phones connected",
+  reconnecting: "reconnecting\u2026",
+  offline: "offline \u00b7 this device can host a practice game only"
+};
+
 // ── The two lines to edit each August ────────────────────────────────────
 // Who is defending, and what season this is. Both are typography, not part
 // of the kickoff video: generative video renders lettering as garbage, and a
@@ -2343,10 +2358,13 @@ class Component extends DCLogic {
       resumeNote: st.resume ? `${(st.resume.players || []).length} on the roster \u00b7 ${st.resume.phase === "lobby" ? "still in the lobby" : st.resume.phase === "reveal" ? "at the draft board" : `question ${(st.resume.qIndex || 0) + 1}`}` : "",
       // "unavailable — demo mode only" is a developer's sentence. What the
       // room needs to know is whether phones can reach this screen.
-      rtLabel: st.rt === "live" ? "phones can join"
-        : st.rt === "reconnecting" ? "reconnecting"
-        : st.rt === "connecting" ? "connecting"
-        : "offline. This device can host a practice game only",
+      // Unknown states fall back to their own name, never to "offline".
+      // hasOwnProperty rather than a bare lookup: "constructor" and "toString"
+      // are inherited from Object.prototype and would come back as functions,
+      // putting function source in the footer. Not reachable today — rt is
+      // only ever set from the five literals above — but the fallback is
+      // there precisely for a state nobody has thought of yet.
+      rtLabel: Object.prototype.hasOwnProperty.call(RT_LABEL, st.rt) ? RT_LABEL[st.rt] : st.rt,
       joinCode: st.joinCode, joinName: st.joinName, onJoinCode: this.onJoinCode, onJoinName: this.onJoinName,
       onJoinKey: this.onJoinKey,
       submitJoin: this.submitJoin, joinNote: st.joinNote,
