@@ -429,6 +429,67 @@ check('the two lobby lines do not say the same thing', () => {
   assert(!/remote/i.test(note), 'rosterNote has taken on the remote as well as the count');
 });
 
+// ── what the footer claims about the connection ─────────────────────────────
+console.log('\nthe realtime readout');
+
+// This shipped saying "offline — this device can host a practice game only" on
+// a perfectly healthy build. The label was a ternary chain whose else branch
+// was the offline message, and "ready" — the SUCCESS state, and the one the
+// home screen sits in all night, because no channel is open there — fell
+// straight through to it. A commissioner opening the page was told the game
+// could not work.
+//
+// So the test is not "does ready have a label". It is: every state the code
+// can put itself into must have one, and only the real offline state may say
+// offline. Anything else is the same bug wearing a different name.
+const RT_STATES = [...new Set(
+  [...template.matchAll(/\brt:\s*"([a-z]+)"/g)].map((m) => m[1])
+)].sort();
+const rtLabelMap = new Function(
+  lift(/const RT_LABEL = \{[\s\S]*?\n\};/, 'RT_LABEL') + 'return RT_LABEL;')();
+
+check('the app can reach exactly the states we think it can', () => {
+  assert(RT_STATES.length >= 4,
+    'found only ' + RT_STATES.length + ' realtime states in the bundle: ' + RT_STATES.join(', '));
+  for (const want of ['connecting', 'ready', 'live', 'offline']) {
+    assert(RT_STATES.indexOf(want) !== -1, 'the "' + want + '" state has disappeared from the code');
+  }
+});
+
+check('every reachable state has its own label', () => {
+  for (const st of RT_STATES) {
+    assert(rtLabelMap[st], 'the "' + st + '" state has no label and would fall back to raw text');
+  }
+});
+
+check('only the offline state is allowed to say offline', () => {
+  for (const st of RT_STATES) {
+    const label = rtLabelMap[st] || '';
+    if (st === 'offline') {
+      assert(/offline/i.test(label), 'the offline state no longer says so');
+      continue;
+    }
+    assert(!/offline|practice game only/i.test(label),
+      'the "' + st + '" state reports the app as offline: ' + JSON.stringify(label));
+  }
+});
+
+check('a healthy boot does not read as a broken one', () => {
+  // "ready" is what a successful createClient sets, and what the home screen
+  // shows until somebody hosts or joins.
+  assert(!/offline/i.test(rtLabelMap.ready),
+    'a successful boot still reads as offline: ' + JSON.stringify(rtLabelMap.ready));
+  assert(/ready|join/i.test(rtLabelMap.ready),
+    'the ready state does not tell the room it can start: ' + JSON.stringify(rtLabelMap.ready));
+});
+
+check('the label is a lookup, so a new state cannot inherit the scary one', () => {
+  const src = lift(/rtLabel: [^,]+,/, 'rtLabel');
+  assert(/RT_LABEL\[st\.rt\]/.test(src), 'rtLabel is not a keyed lookup');
+  assert(!/practice game only/.test(src),
+    'the offline sentence is back in the fallback position, where any unmapped state inherits it');
+});
+
 // ── the commissioner ────────────────────────────────────────────────────────
 console.log('\nwho gets the remote');
 
