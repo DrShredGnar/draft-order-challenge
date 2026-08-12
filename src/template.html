@@ -1404,10 +1404,37 @@ function pts(n) { return n + (n === 1 ? " pt" : " pts"); }
 // glyph budget on a numeral that has to read across a room.
 function mmss(s) { return s < 60 ? String(s) : Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
 function ordinal(n) { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
-// slice() counts UTF-16 code units, so an emoji sitting on the boundary got
-// cut in half and rendered as a replacement box. Array.from splits on code
-// points, which is right for every name anyone has actually typed.
-function clip(str, n) { const a = Array.from(String(str)); return a.length <= n ? String(str) : a.slice(0, n).join(""); }
+// Names get cut at what a person would call a character, which is not what
+// any of the obvious answers count.
+//
+//   slice()      counts UTF-16 code units, so it splits a surrogate pair and
+//                the name renders as a replacement box. This was the bug.
+//   Array.from() counts code points, which fixes the box but still splits
+//                "e + combining acute" into a bare "e", and a family emoji
+//                into the separate people it is joined from.
+//
+// Intl.Segmenter is the only one that knows where a reader would say one
+// character ends. Where it is missing, code points are the safe fallback:
+// still no broken glyphs, just the milder cut.
+//
+// The code-unit ceiling is not about display. A single base letter carrying
+// two hundred combining marks is ONE grapheme, so a grapheme count alone puts
+// no bound on what goes into the broadcast payload and the draft board.
+function clip(str, n) {
+  const s = String(str);
+  const ceiling = n * 8;
+  const capped = s.length > ceiling ? s.slice(0, ceiling) : s;
+  if (typeof Intl !== "undefined" && Intl.Segmenter) {
+    const out = [];
+    for (const g of new Intl.Segmenter("en", { granularity: "grapheme" }).segment(capped)) {
+      if (out.length >= n) return out.join("");
+      out.push(g.segment);
+    }
+    return out.join("");
+  }
+  const a = Array.from(capped);
+  return a.length <= n ? capped : a.slice(0, n).join("");
+}
 
 class Component extends DCLogic {
   state = {

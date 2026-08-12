@@ -146,11 +146,21 @@ fine under `http.server`.
 ## Tests
 
 ```sh
+python3 build.py --check    # FIRST — see below
 node test/qr.test.js        # QR encoder conformance
 node test/draw.test.js      # the kickoff draw and the house-question floor
 node test/reveal.test.js    # the reveal read's cue, against a virtual clock
 node test/failure.test.js   # the states that only exist when something breaks
 ```
+
+**Run `--check` before the tests, or rebuild.** Three of the four suites —
+`draw`, `reveal` and `failure` — read the generated `index.html` rather than
+`src/`, deliberately: testing the source would let a build that drops a fix on
+the floor still go green. The cost of that choice is that editing `src/`
+without rebuilding leaves the tests asserting against the *old* bundle, where
+they pass and mean nothing. `--check` fails loudly on exactly that, so it is
+the cheap guard; `python3 build.py` is the other answer if you know the bundle
+is stale.
 
 `failure.test.js` covers the paths nobody exercises in a quiet room on good
 wifi: the room-code alphabet agreeing with the join filter (they disagreed on

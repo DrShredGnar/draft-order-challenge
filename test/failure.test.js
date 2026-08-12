@@ -97,11 +97,31 @@ check('submitJoin arms the give-up timer and keeps pinging', () => {
   assert(/joinGiveUp\s*=\s*setTimeout/.test(src), 'submitJoin never arms the give-up timer');
   assert(/joinSearch: "missing"/.test(src), 'the give-up timer never reaches the "missing" state');
   // The ping must NOT stop when it gives up: a host booting late still has to
-  // be able to pull this player in without them retyping anything.
+  // be able to pull this player in without them retyping anything. There are
+  // two places that could quietly kill it, so both are checked — the interval
+  // clearing itself, and the give-up timeout clearing it on the way out.
   const ping = src.match(/this\.pingTimer = setInterval\(([\s\S]*?)\n/);
   assert(ping, 'submitJoin no longer starts a ping');
   assert(!/clearInterval\(this\.pingTimer\)/.test(ping[1]),
     'the ping now clears itself inside its own callback — a late host can no longer recover the player');
+  const giveUp = src.match(/this\.joinGiveUp = setTimeout\(\(\) => \{([\s\S]*?)\}, JOIN_GIVEUP_MS\)/);
+  assert(giveUp, 'submitJoin no longer defines the give-up callback');
+  assert(!/clearInterval\(this\.pingTimer\)/.test(giveUp[1]),
+    'the give-up callback now stops the ping — the screen would say "no room" and mean it, ' +
+    'so a host starting a few seconds late could never recover the player');
+});
+
+// Giving up is a message, not a teardown. onMsg is what actually stops the
+// ping, and only because a snapshot arrived.
+check('only an arriving snapshot stops the ping', () => {
+  const src = lift(/^  onMsg\(m, role\) \{[\s\S]*?\n  \}$/m, 'onMsg()');
+  assert(/m\.t === "state"/.test(src), 'onMsg no longer handles a state snapshot');
+  const stateBranch = src.match(/if \(m\.t === "state"\) \{([\s\S]*?)\n      \}/);
+  assert(stateBranch, 'the state branch is no longer a block');
+  assert(/clearInterval\(this\.pingTimer\)/.test(stateBranch[1]),
+    'a snapshot no longer stops the ping, so it pings forever after the player is in');
+  assert(/joinSearch: "found"/.test(stateBranch[1]),
+    'a snapshot no longer clears the "no room" state, so a late host leaves the error on screen');
 });
 
 // ── staleness ───────────────────────────────────────────────────────────────
@@ -178,15 +198,21 @@ check('the view model no longer truncates the board to a flat six', () => {
 // ── names ───────────────────────────────────────────────────────────────────
 console.log('\nnames people actually type');
 
-const clipSrc = lift(/^function clip\(str, n\) \{.*\}$/m, 'clip()');
+const clipSrc = lift(/^function clip\(str, n\) \{[\s\S]*?\n\}$/m, 'clip()');
 const clip = new Function(clipSrc + 'return clip;')();
+
+// Count the way a reader would, not the way any string API does. Every length
+// assertion below goes through this, because code-point counts are exactly
+// the thing that made the old tests pass while the behaviour was still wrong.
+const seg = new Intl.Segmenter('en', { granularity: 'grapheme' });
+const graphemes = (s) => [...seg.segment(s)].map((g) => g.segment);
 
 check('an emoji on the boundary is not cut in half', () => {
   const name = 'Casey ' + '\u{1F3C8}'.repeat(20);       // 🏈 is a surrogate pair
   const out = clip(name, 18);
   assert(!/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(out), 'output ends in a lone high surrogate');
   assert(!/(?:^|[^\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(out), 'output contains a lone low surrogate');
-  assert([...out].length === 18, 'expected 18 code points, got ' + [...out].length);
+  assert(graphemes(out).length === 18, 'expected 18 graphemes, got ' + graphemes(out).length);
 });
 
 check('a plain name is returned untouched', () => {
@@ -194,7 +220,32 @@ check('a plain name is returned untouched', () => {
 });
 
 check('the length limit counts what a person would count', () => {
-  assert([...clip('\u{1F3C8}'.repeat(30), 5)].length === 5, 'five footballs should clip to five footballs');
+  assert(graphemes(clip('\u{1F3C8}'.repeat(30), 5)).length === 5, 'five footballs should clip to five footballs');
+});
+
+// The two cases code-point clipping gets wrong. Neither renders as a broken
+// box the way a split surrogate does — they render as a DIFFERENT name, which
+// is its own kind of wrong on a television in front of the league.
+check('a combining mark stays attached to its letter', () => {
+  const accented = 'é'.repeat(6);                 // José, six times over
+  assert(clip(accented, 5) === 'é'.repeat(5),
+    'clip split an accented character, leaving a bare letter or a floating accent');
+});
+
+check('a zero-width-joiner emoji is not split into its parts', () => {
+  const family = '\u{1F468}‍\u{1F469}‍\u{1F467}';   // one grapheme, five code points
+  const out = clip(family + family + family, 2);
+  assert(graphemes(out).length === 2, 'expected 2 graphemes, got ' + graphemes(out).length);
+  assert(out === family + family, 'clip broke a joined emoji into separate people');
+  assert(!out.endsWith('‍'), 'output ends on a dangling zero-width joiner');
+});
+
+// A grapheme count alone bounds nothing: one base letter can carry unlimited
+// combining marks and still be a single grapheme.
+check('a pathological name cannot grow without bound', () => {
+  const zalgo = 'a' + '́'.repeat(5000);
+  const out = clip(zalgo, 18);
+  assert(out.length <= 18 * 8, 'a single-grapheme name of 5000 marks passed through at ' + out.length + ' code units');
 });
 
 // ── the clock face ──────────────────────────────────────────────────────────
