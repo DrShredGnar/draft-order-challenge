@@ -216,16 +216,34 @@ function pFinal(revealed, myId) {
   return v;
 }
 
+// Picks 1-3 render on a podium and 4-12 in the list below it, so "the whole
+// board" is the union of the two. Every check below reads that union: a pick
+// that fell out of BOTH lists is the regression these tests exist to catch,
+// and asserting either length alone would no longer see it.
+const board = (v) => [...(v.pPodiumRows || []), ...(v.pDraftRows || [])];
+
 check('the phone renders the whole board at every stage of the reveal', () => {
   for (const revealed of [0, 1, 6, 11, 12]) {
+    const picks = board(pFinal(revealed, 'p10')).map((d) => Number(d.pickNum)).sort((a, b) => a - b);
+    assert(picks.length === 12,
+      'revealed=' + revealed + ': expected 12 rows across podium+list, got ' + picks.length);
+    assert(picks.join() === '1,2,3,4,5,6,7,8,9,10,11,12',
+      'revealed=' + revealed + ': podium+list is not picks 1-12 exactly once, got ' + picks.join());
+  }
+});
+
+check('the podium holds the top three, and the list holds the rest', () => {
+  for (const revealed of [0, 6, 12]) {
     const v = pFinal(revealed, 'p10');
-    assert(v.pDraftRows && v.pDraftRows.length === 12,
-      'revealed=' + revealed + ': expected 12 rows, got ' + (v.pDraftRows || []).length);
+    assert(v.pPodiumRows.map((d) => Number(d.pickNum)).join() === '2,1,3',
+      'revealed=' + revealed + ': podium is not second-first-third, got ' + v.pPodiumRows.map((d) => d.pickNum).join());
+    assert(v.pDraftRows.every((d) => Number(d.pickNum) >= 4),
+      'revealed=' + revealed + ': a top-three pick is still in the list');
   }
 });
 
 check('picks appear worst to first, one at a time', () => {
-  const named = (v) => v.pDraftRows.filter((d) => d.name !== '—' && d.name !== 'ON THE CLOCK').map((d) => Number(d.pickNum));
+  const named = (v) => board(v).filter((d) => d.name !== '—' && d.name !== 'ON THE CLOCK').map((d) => Number(d.pickNum)).sort((a, b) => a - b);
   assert(named(pFinal(0, 'p0')).length === 0, 'a pick is already showing before the reveal starts');
   assert(named(pFinal(1, 'p0')).join() === '12', 'the first pick out is not pick 12');
   assert(named(pFinal(6, 'p0')).join() === '7,8,9,10,11,12', 'six revealed should be picks 7-12');
@@ -233,7 +251,7 @@ check('picks appear worst to first, one at a time', () => {
 });
 
 check('the next pick is on the clock, and only that one', () => {
-  const onClock = (v) => v.pDraftRows.filter((d) => d.name === 'ON THE CLOCK').map((d) => Number(d.pickNum));
+  const onClock = (v) => board(v).filter((d) => d.name === 'ON THE CLOCK').map((d) => Number(d.pickNum));
   assert(onClock(pFinal(0, 'p0')).join() === '12', 'pick 12 is not on the clock at the start');
   assert(onClock(pFinal(6, 'p0')).join() === '6', 'pick 6 is not on the clock after six reveals');
   assert(onClock(pFinal(12, 'p0')).length === 0, 'something is still on the clock after the last pick');
@@ -241,13 +259,13 @@ check('the next pick is on the clock, and only that one', () => {
 
 check('your own row is marked at every stage, revealed or not', () => {
   for (const revealed of [0, 6, 12]) {
-    const ringed = pFinal(revealed, 'p10').pDraftRows.filter((d) => d.ring !== 'none').map((d) => d.pickNum);
+    const ringed = board(pFinal(revealed, 'p10')).filter((d) => d.ring !== 'none').map((d) => d.pickNum);
     assert(ringed.join() === '11', 'revealed=' + revealed + ': own row not ringed exactly once, got ' + JSON.stringify(ringed));
   }
 });
 
 check('exactly one row is flagged as the pick that just landed', () => {
-  const latest = (v) => v.pDraftRows.filter((d) => d.latest === '1').map((d) => Number(d.pickNum));
+  const latest = (v) => board(v).filter((d) => d.latest === '1').map((d) => Number(d.pickNum));
   assert(latest(pFinal(0, 'p0')).length === 0, 'a row is flagged as latest before anything has been revealed');
   assert(latest(pFinal(1, 'p0')).join() === '12', 'the newest pick is not flagged for the scroll');
   assert(latest(pFinal(7, 'p0')).join() === '6', 'the newest pick is not flagged for the scroll');

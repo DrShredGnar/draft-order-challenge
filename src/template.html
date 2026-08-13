@@ -917,8 +917,22 @@ p{letter-spacing:.005em}
       </div>
       </sc-if>
       <div class="chyron-eyebrow" style="flex:none;font-size:12px">{{ pRevealHeadline }}</div>
+      <!-- The same podium the TV draws, sized for a phone. It sits UNDER the
+           "Your pick" hero on purpose: on this screen the player's own number
+           is the story, and the podium is the room's. -->
+      <div style="flex:none;display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:5px;align-items:end">
+        <sc-for list="{{ pPodiumRows }}" as="d" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:1px;padding:7px 8px;border-radius:var(--radius-sm);background:{{ d.bg }};border:1px {{ d.podiumDash }} {{ d.podiumBorder }};box-shadow:{{ d.ring }};opacity:{{ d.opacity }};animation:{{ d.anim }}">
+            <span style="flex:none;font:italic 700 10px/1 var(--font-heading);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:{{ d.pickColor }}">{{ d.podiumLabel }}</span>
+            <span style="flex:none;font-family:var(--font-heading);font-size:17px;font-weight:800;text-transform:uppercase;letter-spacing:.01em;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:{{ d.nameColor }}">{{ d.name }}</span>
+            <span style="flex:none;font-size:9.5px;color:var(--color-muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.detail }}</span>
+            <span style="flex:none;font:italic 700 9px/1.2 var(--font-heading);letter-spacing:.1em;text-transform:uppercase;color:var(--color-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.podiumNote }}</span>
+            <div style="flex:none;height:{{ d.plinth }}"></div>
+          </div>
+        </sc-for>
+      </div>
       <div style="flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:4px">
-        <sc-for list="{{ pDraftRows }}" as="d" hint-placeholder-count="12">
+        <sc-for list="{{ pDraftRows }}" as="d" hint-placeholder-count="9">
           <div data-latest="{{ d.latest }}" style="flex:none;display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:var(--radius-sm);background:{{ d.bg }};border:1px solid {{ d.border }};box-shadow:{{ d.ring }};opacity:{{ d.opacity }};animation:{{ d.anim }}">
             <span style="flex:none;width:26px;font-family:var(--font-heading);font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;color:{{ d.pickColor }}">{{ d.pickNum }}</span>
             <span style="flex:1;min-width:0;font-family:var(--font-heading);font-size:19px;font-weight:800;text-transform:uppercase;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:{{ d.nameColor }}">{{ d.name }}</span>
@@ -1204,8 +1218,26 @@ p{letter-spacing:.005em}
           <button sc-camel-on-click="{{ downloadCardTap }}" style="cursor:pointer;min-height:56px;padding:0 22px;border-radius:var(--radius-md);border:1px solid var(--color-line-strong);background:transparent;color:var(--color-muted-strong);font-size:clamp(13px,1.1vw,16px);font-weight:500;white-space:nowrap" style-hover="border-color:var(--color-accent);color:var(--color-accent-200)">Download card</button>
         </div>
       </div>
-      <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:minmax(0,1fr);gap:clamp(5px,.7vw,11px)">
-        <sc-for list="{{ draftRows }}" as="d" hint-placeholder-count="12">
+      <!-- The podium. Second, first, third — left to right, the way one gets
+           built, so the tall plinth lands in the middle of the TV rather than
+           at the end of a sorted list. Heights come from the row (`plinth`)
+           because a three-hander renders a shorter podium, not a broken one. -->
+      <div style="flex:none;display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:clamp(8px,1vw,18px);align-items:end">
+        <sc-for list="{{ podiumRows }}" as="d" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:clamp(2px,.5vh,6px);padding:clamp(8px,1.4vh,16px) clamp(10px,1.1vw,18px);border-radius:var(--radius-md);background:{{ d.bg }};border:1px {{ d.podiumDash }} {{ d.podiumBorder }};opacity:{{ d.podiumOpacity }};animation:{{ d.anim }}">
+            <span style="flex:none;font:italic 700 clamp(11px,.8vw,16px)/1 var(--font-heading);letter-spacing:.16em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:{{ d.pickColor }}">{{ d.podiumLabel }}</span>
+            <span style="flex:none;font-family:var(--font-heading);font-size:clamp(20px,2.2vw,46px);font-weight:800;text-transform:uppercase;letter-spacing:.01em;line-height:.95;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:{{ d.nameColor }}">{{ d.name }}</span>
+            <span style="flex:none;font-size:clamp(10px,.9vw,14px);color:var(--color-muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.detail }}</span>
+            <span style="flex:none;font-size:clamp(10px,.85vw,13px);color:var(--color-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.podiumNote }}</span>
+            <div style="flex:none;height:{{ d.plinth }}"></div>
+          </div>
+        </sc-for>
+      </div>
+      <!-- Three across, so a full twelve-man league leaves picks 4-12 as a
+           clean 3x3 under the podium. Rows stay on 1fr: content-height rows
+           filled the top third of the TV and left the rest of it black. -->
+      <div style="flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:clamp(5px,.7vw,11px)">
+        <sc-for list="{{ draftRows }}" as="d" hint-placeholder-count="9">
           <div style="display:flex;align-items:stretch;border-radius:var(--radius-md);overflow:hidden;background:{{ d.bg }};border:1px solid {{ d.border }};opacity:{{ d.opacity }};animation:{{ d.anim }}">
             <span style="flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0 clamp(9px,1vw,15px);background:rgba(0,0,0,.3);border-right:1px solid {{ d.border }};min-width:clamp(50px,4.8vw,82px)">
               <span style="font:italic 700 clamp(11px,.6vw,14px)/1 var(--font-heading);letter-spacing:.18em;text-transform:uppercase;color:var(--color-muted)">Pick</span>
@@ -2672,7 +2704,7 @@ class Component extends DCLogic {
         // counted down to it, the one below it is on the clock, the rest are
         // held back. Pick order top to bottom, so it reads as the same draft
         // board rather than a different view of it.
-        v.pDraftRows = order.map((p) => {
+        const pRowFor = (p) => {
           const pick = p.rank;
           const shown = pick >= firstShown;
           const onClock = !shown && pick === firstShown - 1 && revealed < total;
@@ -2698,9 +2730,39 @@ class Component extends DCLogic {
               : onClock ? "lofgPulse 1.4s ease-in-out infinite" : "none",
             pickColor: first ? "var(--color-accent-200)" : "var(--color-muted)",
             nameColor: shown ? (mine ? "var(--color-accent-200)" : "var(--color-text)")
-              : onClock ? "var(--onair-ink)" : "var(--color-muted)"
+              : onClock ? "var(--onair-ink)" : "var(--color-muted)",
+            // Podium only; the list ignores these.
+            plinth: "", podiumLabel: "", podiumNote: "", podiumDash: "", podiumBorder: ""
           };
+        };
+        // The phone gets the TV's podium, because the phone IS the broadcast
+        // for anyone not in the room. Same second-first-third arrangement, on
+        // a plinth scaled to a 390px screen.
+        //
+        // The board is still whole: picks 1-3 move into pPodiumRows and 4-12
+        // stay in pDraftRows, and between them every pick is on screen exactly
+        // once. failure.test.js asserts that union, not either list's length.
+        //
+        // Splitting rather than rendering twice matters for the auto-scroll:
+        // componentDidUpdate takes the FIRST [data-latest="1"] in the document,
+        // so a hidden duplicate above the list would swallow the scroll.
+        const pRows = order.map(pRowFor);
+        const byPick = (n) => pRows.find((r) => Number(r.pickNum) === n);
+        const P_PODIUM = [
+          { pick: 2, plinth: "clamp(6px,1.4vh,13px)", note: "" },
+          { pick: 1, plinth: "clamp(14px,3.2vh,28px)", note: "First overall" },
+          { pick: 3, plinth: "0px", note: "" }
+        ];
+        v.pPodiumRows = P_PODIUM.filter((slot) => byPick(slot.pick)).map((slot) => {
+          const row = byPick(slot.pick);
+          row.plinth = slot.plinth;
+          row.podiumLabel = "Pick " + slot.pick;
+          row.podiumNote = row.opacity === "1" ? slot.note : "Hooded";
+          row.podiumDash = row.opacity === "1" ? "solid" : "dashed";
+          row.podiumBorder = row.opacity === "1" ? row.border : "var(--color-line-strong)";
+          return row;
         });
+        v.pDraftRows = pRows.filter((r) => Number(r.pickNum) >= 4);
         v.pRevealHeadline = revealed === 0 ? "The board is set."
           : revealed >= total ? `${order[0] ? order[0].name : "\u2014"} is on the clock.`
           : `Pick ${firstShown} is in.`;
@@ -2862,7 +2924,7 @@ class Component extends DCLogic {
         const revealed = st.revealCount;
         const firstShown = total - revealed + 1;
         v.revealHeadline = revealed === 0 ? "The board is set." : revealed >= total ? `${order[0] ? order[0].name : "\u2014"} is on the clock.` : `Pick ${firstShown} is in.`;
-        v.draftRows = order.map((p, k) => {
+        const rowFor = (p, k) => {
           const pick = k + 1, shown = pick >= firstShown;
           const onClock = !shown && pick === firstShown - 1 && revealed < total;
           const first = shown && pick === 1;
@@ -2874,9 +2936,49 @@ class Component extends DCLogic {
             opacity: shown ? 1 : onClock ? 0.85 : 0.3,
             anim: shown ? "lofgSlam .5s ease-out" : onClock ? "lofgPulse 1.4s ease-in-out infinite" : "none",
             pickColor: first ? "var(--color-accent-200)" : "color-mix(in srgb,var(--color-text) 45%,transparent)",
-            nameColor: shown ? "var(--color-text)" : "var(--onair-ink)"
+            nameColor: shown ? "var(--color-text)" : "var(--onair-ink)",
+            // Only the podium reads these.
+            plinth: "", podiumLabel: "", podiumNote: "", podiumDash: "", podiumOpacity: "", podiumBorder: ""
           };
+        };
+        // The top three get a podium, in the order a podium is actually built:
+        // second on the left, first raised in the middle, third on the right.
+        // Everything from pick four down keeps the flat grid.
+        //
+        // Indices are filtered rather than assumed, because a three-hander is
+        // a legal game \u2014 order[2] does not always exist, and reading .name off
+        // undefined would take the whole reveal down at the moment it matters
+        // most. The podium simply gets shorter.
+        // `plinth` is the height of the PEDESTAL under the nameplate, not the
+        // height of the card. Sizing the card itself meant the short plinths
+        // were shorter than their own contents, and `overflow:hidden` ate the
+        // pick label off the top of third place. A pedestal cannot clip
+        // anything: the card is content-height plus this.
+        const PODIUM = [
+          { idx: 1, plinth: "clamp(10px,2.2vh,24px)", note: "Second off the board." },
+          { idx: 0, plinth: "clamp(26px,5.4vh,58px)", note: "Revealed last. Winner takes the podium." },
+          { idx: 2, plinth: "0px", note: "Third off the board." }
+        ];
+        v.podiumRows = PODIUM.filter((slot) => order[slot.idx]).map((slot) => {
+          const row = rowFor(order[slot.idx], slot.idx);
+          row.plinth = slot.plinth;
+          // A hooded plinth is a hero element on a TV, so it reads as an empty
+          // frame waiting to be filled rather than as the 0.3-opacity ghost
+          // the flat grid uses. Dashed while hooded, solid once it lands.
+          row.podiumDash = row.opacity === 1 ? "solid" : "dashed";
+          row.podiumOpacity = row.opacity === 1 ? "1" : "0.85";
+          // --color-row-inert is tuned for a dimmed row in a dense grid. On a
+          // plinth with three times the area it disappears into the ground.
+          row.podiumBorder = row.opacity === 1 ? row.border : "var(--color-line-strong)";
+          row.podiumLabel = slot.idx === 0 ? "Pick 1 \u00b7 First overall" : "Pick " + (slot.idx + 1);
+          // Hooded picks show the rule of the moment, not a dead dash alone.
+          row.podiumNote = row.name ? slot.note : "Still hooded";
+          // rowFor leaves a hooded name empty, which collapses the plinth to
+          // its padding. The podium always needs something on the nameplate.
+          if (!row.name) row.name = "\u2014 \u2014 \u2014";
+          return row;
         });
+        v.draftRows = order.slice(3).map((p, i) => rowFor(p, i + 3));
         v.revealFoot = revealed >= total ? "Copy the order or download the card." : "One pick every few seconds, worst to first.";
         v.copyShare = this.copyShare; v.downloadCard = this.downloadCard;
         // Wrapped so using them does not also cut the reveal read short.
