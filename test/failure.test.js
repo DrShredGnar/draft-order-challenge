@@ -209,23 +209,51 @@ const NAMES = ['Sully', 'Nate', 'Big Rich', 'Petey', 'Wes', 'Cam', 'Theo', 'Gunn
 const BOARD = NAMES.map((n, i) => ({ id: 'p' + i, name: n, score: 24 - i * 2, timeMs: (i + 1) * 1400, rank: i + 1 }));
 const pts = (n) => n + (n === 1 ? ' pt' : ' pts');
 const ordinal = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
-function pFinal(revealed, myId) {
+// `n` truncates the roster. A two- or three-hander is a legal game and the
+// podium filters its slots for exactly that case; left at twelve, no test ever
+// dropped a slot and the guard went unexercised.
+// Lifted rather than restated, so the test reads whatever the podium actually
+// says. Both screens select this note with the same expression now; a copy here
+// would be a third version of the string waiting to disagree with the other two.
+const { HOODED_NOTE } = new Function(
+  lift(/const HOODED_NOTE = "[^"]*";/, 'HOODED_NOTE') + 'return { HOODED_NOTE };')();
+
+function pFinal(revealed, myId, n) {
+  const roster = n ? BOARD.slice(0, n) : BOARD;
   const v = {}, st = { myId, voOn: false };
-  new Function('v', 'st', 's', 'pts', 'ordinal', 'SNAKE_DRAFT', 'self_',
-    pFinalBody.replace(/this\./g, 'self_.'))(v, st, { board: BOARD, draftTotal: 12, revealed }, pts, ordinal, true, { playCall() {} });
+  new Function('v', 'st', 's', 'pts', 'ordinal', 'SNAKE_DRAFT', 'HOODED_NOTE', 'self_',
+    pFinalBody.replace(/this\./g, 'self_.'))(v, st, { board: roster, draftTotal: roster.length, revealed }, pts, ordinal, true, HOODED_NOTE, { playCall() {} });
   return v;
 }
 
+// Picks 1-3 render on a podium and 4-12 in the list below it, so "the whole
+// board" is the union of the two. Every check below reads that union: a pick
+// that fell out of BOTH lists is the regression these tests exist to catch,
+// and asserting either length alone would no longer see it.
+const board = (v) => [...(v.pPodiumRows || []), ...(v.pDraftRows || [])];
+
 check('the phone renders the whole board at every stage of the reveal', () => {
   for (const revealed of [0, 1, 6, 11, 12]) {
+    const picks = board(pFinal(revealed, 'p10')).map((d) => Number(d.pickNum)).sort((a, b) => a - b);
+    assert(picks.length === 12,
+      'revealed=' + revealed + ': expected 12 rows across podium+list, got ' + picks.length);
+    assert(picks.join() === '1,2,3,4,5,6,7,8,9,10,11,12',
+      'revealed=' + revealed + ': podium+list is not picks 1-12 exactly once, got ' + picks.join());
+  }
+});
+
+check('the podium holds the top three, and the list holds the rest', () => {
+  for (const revealed of [0, 6, 12]) {
     const v = pFinal(revealed, 'p10');
-    assert(v.pDraftRows && v.pDraftRows.length === 12,
-      'revealed=' + revealed + ': expected 12 rows, got ' + (v.pDraftRows || []).length);
+    assert(v.pPodiumRows.map((d) => Number(d.pickNum)).join() === '2,1,3',
+      'revealed=' + revealed + ': podium is not second-first-third, got ' + v.pPodiumRows.map((d) => d.pickNum).join());
+    assert(v.pDraftRows.every((d) => Number(d.pickNum) >= 4),
+      'revealed=' + revealed + ': a top-three pick is still in the list');
   }
 });
 
 check('picks appear worst to first, one at a time', () => {
-  const named = (v) => v.pDraftRows.filter((d) => d.name !== '—' && d.name !== 'ON THE CLOCK').map((d) => Number(d.pickNum));
+  const named = (v) => board(v).filter((d) => d.name !== '—' && d.name !== 'ON THE CLOCK').map((d) => Number(d.pickNum)).sort((a, b) => a - b);
   assert(named(pFinal(0, 'p0')).length === 0, 'a pick is already showing before the reveal starts');
   assert(named(pFinal(1, 'p0')).join() === '12', 'the first pick out is not pick 12');
   assert(named(pFinal(6, 'p0')).join() === '7,8,9,10,11,12', 'six revealed should be picks 7-12');
@@ -233,21 +261,50 @@ check('picks appear worst to first, one at a time', () => {
 });
 
 check('the next pick is on the clock, and only that one', () => {
-  const onClock = (v) => v.pDraftRows.filter((d) => d.name === 'ON THE CLOCK').map((d) => Number(d.pickNum));
+  const onClock = (v) => board(v).filter((d) => d.name === 'ON THE CLOCK').map((d) => Number(d.pickNum));
   assert(onClock(pFinal(0, 'p0')).join() === '12', 'pick 12 is not on the clock at the start');
   assert(onClock(pFinal(6, 'p0')).join() === '6', 'pick 6 is not on the clock after six reveals');
   assert(onClock(pFinal(12, 'p0')).length === 0, 'something is still on the clock after the last pick');
 });
 
 check('your own row is marked at every stage, revealed or not', () => {
-  for (const revealed of [0, 6, 12]) {
-    const ringed = pFinal(revealed, 'p10').pDraftRows.filter((d) => d.ring !== 'none').map((d) => d.pickNum);
-    assert(ringed.join() === '11', 'revealed=' + revealed + ': own row not ringed exactly once, got ' + JSON.stringify(ringed));
+  // p10 is pick 11, which lives in the list; p0 is pick 1, which lives on the
+  // podium. Checking only a list pick left the podium's own `ring` binding
+  // untested, so a top-three finisher could have lost their marker silently.
+  for (const [myId, ownPick] of [['p10', '11'], ['p0', '01']]) {
+    for (const revealed of [0, 6, 12]) {
+      const ringed = board(pFinal(revealed, myId)).filter((d) => d.ring !== 'none').map((d) => d.pickNum);
+      assert(ringed.join() === ownPick,
+        myId + ' revealed=' + revealed + ': own row not ringed exactly once, got ' + JSON.stringify(ringed));
+    }
+  }
+});
+
+check('a short roster renders a shorter podium, not a broken one', () => {
+  // The podium filters slots that have nobody standing in them. Reading .name
+  // off an absent order[2] would take the reveal down at the moment it matters
+  // most, and a twelve-player fixture never gets near that branch.
+  for (const n of [1, 2, 3, 4, 5]) {
+    const wanted = Array.from({ length: n }, (_, i) => i + 1).join();
+    for (let revealed = 0; revealed <= n; revealed++) {
+      const v = pFinal(revealed, 'p0', n);
+      const picks = board(v).map((d) => Number(d.pickNum)).sort((a, b) => a - b).join();
+      assert(picks === wanted,
+        'n=' + n + ' revealed=' + revealed + ': board is not picks 1-' + n + ' exactly once, got ' + picks);
+      assert(v.pPodiumRows.length === Math.min(n, 3),
+        'n=' + n + ': podium should hold ' + Math.min(n, 3) + ' slots, got ' + v.pPodiumRows.length);
+      const first = v.pPodiumRows.find((d) => Number(d.pickNum) === 1);
+      assert(first && first.col === '2',
+        'n=' + n + ': first place is not in the centre track, so a solo winner stands off to one side');
+      assert(v.pDraftRows.every((d) => Number(d.pickNum) >= 4), 'n=' + n + ': a top-three pick is still in the list');
+      assert(v.pBoardFlex === (v.pDraftRows.length ? '1' : 'none'),
+        'n=' + n + ': an empty list still claims its share of the screen');
+    }
   }
 });
 
 check('exactly one row is flagged as the pick that just landed', () => {
-  const latest = (v) => v.pDraftRows.filter((d) => d.latest === '1').map((d) => Number(d.pickNum));
+  const latest = (v) => board(v).filter((d) => d.latest === '1').map((d) => Number(d.pickNum));
   assert(latest(pFinal(0, 'p0')).length === 0, 'a row is flagged as latest before anything has been revealed');
   assert(latest(pFinal(1, 'p0')).join() === '12', 'the newest pick is not flagged for the scroll');
   assert(latest(pFinal(7, 'p0')).join() === '6', 'the newest pick is not flagged for the scroll');
@@ -314,12 +371,72 @@ check('the travel is a percentage of the bar, never a viewport unit', () => {
   }
 });
 
-check('each mover is a full-width child, so a percentage means the whole bar', () => {
-  // translateX(47%) moves an element by 47% of ITS OWN width. That only equals
-  // 47% of the bar if the mover is exactly as wide as the bar.
-  for (const m of template.matchAll(/style="([^"]*transform:translateX\(\{\{ \w+ \}\}\)[^"]*)"/g)) {
-    assert(/width:100%/.test(m[1]),
-      'a percentage mover is not width:100% of the bar, so its travel is scaled wrong:\n           ' + m[1].slice(0, 140));
+check('each mover takes its width from the bar, so a percentage means the bar', () => {
+  // translateX(47%) moves an element by 47% of ITS OWN width, so the travel
+  // only tracks the bar if the mover's width comes FROM the bar. Two shapes
+  // do that: spanning it outright (width:100%), or anchoring to both edges
+  // (left: + right:), which insets the travel by a fixed amount so the runner
+  // stays inside the clip at 0:00 — see the runner comments in the template.
+  //
+  // This used to demand width:100% literally. That was a proxy for the real
+  // rule, and the real rule is the second assertion: no viewport units in a
+  // mover's own geometry. The bar is narrower than the viewport on every
+  // screen, and vw arithmetic here is exactly what once sent the ball off the
+  // right-hand end of the field.
+  let checked = 0;
+  const insets = new Map();
+  const barStarts = [...template.matchAll(/<div aria-hidden="true"[^>]*overflow:hidden/g)].map((b) => b.index);
+  assert(barStarts.length === 2, 'expected two clock bars (host and phone), found ' + barStarts.length);
+  for (const m of template.matchAll(/style="([^"]*transform:translateX\(\{\{ (\w+) \}\}\)[^"]*)"/g)) {
+    const style = m[1], expr = m[2];
+    const spansBar = /width:100%/.test(style);
+    const anchored = /(?:^|;)left:[^;]+/.test(style) && /(?:^|;)right:[^;]+/.test(style);
+    assert(spansBar || anchored,
+      'a percentage mover is neither width:100% nor anchored to both edges, so its travel ' +
+      'is scaled to nothing in particular:\n           ' + style.slice(0, 140));
+    const geometry = (style.match(/(?:^|;)(?:width|left|right):[^;]*/g) || []).join(';');
+    assert(!/\d(?:vw|vh|vmin|vmax)/.test(geometry),
+      'a mover sizes itself in viewport units, so its travel no longer tracks the bar:\n           ' + geometry);
+    if (anchored) {
+      // Group by BAR, not by expression. Both bars bind the same
+      // {{ drivePctStr }}, and their insets are meant to differ — the host
+      // clears a 56px ball and the phone a 30px one. What must agree is two
+      // movers inside ONE bar.
+      const bar = barStarts.filter((i) => i < m.index).length - 1;
+      const pair = (style.match(/(?:^|;)left:([^;]*)/) || [])[1] + '|' + (style.match(/(?:^|;)right:([^;]*)/) || [])[1];
+      if (!insets.has(bar)) insets.set(bar, new Set());
+      insets.get(bar).add(pair);
+    }
+    checked++;
+  }
+  // The host's runner and its line of scrimmage are two elements in one bar,
+  // and the template says they must share an inset "or the ball stops sitting
+  // on its own line". Nothing caught an edit to only one of them.
+  for (const [bar, pairs] of insets) {
+    assert(pairs.size <= 1,
+      'two movers inside bar #' + bar + ' use different insets, so the ball and the line of ' +
+      'scrimmage drift apart: ' + [...pairs].join('  vs  '));
+  }
+  assert(checked >= 3, 'expected at least three movers (host playhead, host runner, phone runner), found ' + checked);
+});
+
+check('the landing hold outlasts the transition it waits on', () => {
+  // DRIVE_LAND_MS holds 0:00 on screen so the bar can finish travelling. If
+  // someone retunes the bar's easing and not the constant, the ball goes back
+  // to stopping short and nothing says so — the failure is a missing frame.
+  const src = lift(/const DRIVE_LAND_MS = \d+;/, 'DRIVE_LAND_MS');
+  const { DRIVE_LAND_MS } = new Function(src + 'return { DRIVE_LAND_MS };')();
+  const durations = [];
+  for (const m of template.matchAll(/style="([^"]*\{\{ (?:driveFrac|drivePctStr) \}\}[^"]*)"/g)) {
+    const d = m[1].match(/transition:transform ([\d.]+)s/);
+    if (d) durations.push({ ms: parseFloat(d[1]) * 1000, style: m[1].slice(0, 90) });
+  }
+  assert(durations.length >= 3,
+    'expected the bar fills and runners to declare transform transitions, found ' + durations.length);
+  for (const d of durations) {
+    assert(DRIVE_LAND_MS >= d.ms,
+      'DRIVE_LAND_MS is ' + DRIVE_LAND_MS + 'ms but a drive element transitions over ' + d.ms +
+      'ms, so the question ends mid-travel and the ball never breaks the plane:\n           ' + d.style);
   }
 });
 

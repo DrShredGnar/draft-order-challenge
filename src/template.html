@@ -791,7 +791,7 @@ p{letter-spacing:.005em}
         <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(90deg,transparent 0,transparent calc(10% - 1px),color-mix(in srgb, var(--color-text) 12%, transparent) calc(10% - 1px),color-mix(in srgb, var(--color-text) 12%, transparent) 10%)"></div>
         <!-- transform:scaleX off a fixed-width track instead of animating
              `width`: same picture, composited instead of re-laid-out. -->
-        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform-origin:left center;transform:scaleX({{ clockFrac }});will-change:transform;background:linear-gradient(90deg,color-mix(in srgb,var(--color-accent) 8%,transparent),color-mix(in srgb,var(--color-accent) 28%,transparent));transition:transform .9s linear"></div>
+        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform-origin:left center;transform:scaleX({{ driveFrac }});will-change:transform;background:linear-gradient(90deg,color-mix(in srgb,var(--color-accent) 8%,transparent),color-mix(in srgb,var(--color-accent) 28%,transparent));transition:transform .9s linear"></div>
         <!-- The runner travels on a wrapper, not on itself. Two reasons, and
              the first one is why the ball sat dead at the left edge on every
              phone: an element that is running lofgBob has its `transform`
@@ -805,7 +805,12 @@ p{letter-spacing:.005em}
              viewport instead, which is wider than this bar on every screen —
              the column is capped at 560px and padded — so the ball also ran
              off the right end into the overflow near zero. -->
-        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform:translateX({{ clockPctStr }});will-change:transform;transition:transform .9s linear">
+        <!-- Inset by half the ball, for the reason spelled out on the host's
+             copy: the svg is 30px wide and hangs 15px left of the line, so on
+             a full-width track exactly half of it sat outside the clip at
+             0:30. On a phone that is not a ball on its own goal line, it is
+             half a ball. -->
+        <div style="position:absolute;top:0;bottom:0;left:15px;right:15px;transform:translateX({{ drivePctStr }});will-change:transform;transition:transform .9s linear">
           <svg sc-camel-view-box="0 0 48 30" width="30" height="19" style="position:absolute;top:50%;left:-15px;margin-top:-9.5px;animation:lofgBob .42s ease-in-out infinite">
             <ellipse cx="24" cy="15" rx="22" ry="13" fill="#6b3a1f" stroke="var(--color-accent-100)" stroke-width="2.5"></ellipse>
             <path d="M7 15h8M33 15h8M18 15h12M20 10.5v9M24 10.5v9M28 10.5v9" stroke="var(--color-accent-100)" stroke-width="2.5" stroke-linecap="round"></path>
@@ -841,6 +846,29 @@ p{letter-spacing:.005em}
              nine read as elimination when twelve points were still live. -->
         <div style="font-size:13px;color:var(--color-accent-300)">{{ pStanding }}</div>
       </div>
+      <!-- The TV's two calls, on the phone. Fastest whistle and how many made
+           it sit on one row; the flag gets its own box under them. -->
+      <div style="flex:none;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+        <span style="flex:none;font:italic 700 11px/1 var(--font-heading);letter-spacing:.16em;text-transform:uppercase;color:var(--color-muted)">Fastest</span>
+        <span style="flex:1;min-width:0;font-family:var(--font-heading);font-size:19px;font-weight:800;text-transform:uppercase;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ pFastestLabel }}</span>
+        <span style="flex:none;font-size:11.5px;color:var(--color-accent-300);font-variant-numeric:tabular-nums;white-space:nowrap">{{ pOnBoardNote }}</span>
+      </div>
+      <sc-if value="{{ pHasWrong }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:none;display:flex;flex-direction:column;gap:6px;padding:9px 10px;border-radius:var(--radius-md);background:color-mix(in srgb,var(--color-penalty) 12%,transparent);border:1px solid color-mix(in srgb,var(--color-penalty) 55%,transparent)">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="flex:none;display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:var(--radius-sm);background:var(--color-penalty)">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--color-penalty-deep);animation:lofgPulse 1s ease-in-out infinite"></span>
+            <span style="font:italic 700 10px/1 var(--font-heading);letter-spacing:.18em;text-transform:uppercase;color:var(--color-penalty-deep)">Flag</span>
+          </span>
+          <span style="flex:1;min-width:0;font-family:var(--font-heading);font-size:16px;font-weight:800;letter-spacing:.005em;color:var(--color-penalty-bright);text-wrap:pretty">{{ pShameLine }}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px">
+          <sc-for list="{{ pWrongList }}" as="w" hint-placeholder-count="4">
+            <span style="display:block;text-align:center;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;padding:5px 7px;border-radius:var(--radius-sm);font-family:var(--font-heading);font-size:14px;font-weight:800;background:var(--color-penalty-deep);color:var(--color-penalty-bright);border:1px solid color-mix(in srgb,var(--color-penalty) 70%,transparent)">{{ w.label }}</span>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
       <div style="flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid var(--color-divider);padding-top:12px;display:flex;flex-direction:column;gap:5px">
         <sc-for list="{{ miniBoard }}" as="r" hint-placeholder-count="12">
           <div data-me="{{ r.me }}" style="flex:none;display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:var(--radius-sm);background:{{ r.rowBg }};box-shadow:{{ r.rowRing }}">
@@ -917,8 +945,26 @@ p{letter-spacing:.005em}
       </div>
       </sc-if>
       <div class="chyron-eyebrow" style="flex:none;font-size:12px">{{ pRevealHeadline }}</div>
-      <div style="flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:4px">
-        <sc-for list="{{ pDraftRows }}" as="d" hint-placeholder-count="12">
+      <!-- The same podium the TV draws, sized for a phone. It sits UNDER the
+           "Your pick" hero on purpose: on this screen the player's own number
+           is the story, and the podium is the room's. -->
+      <!-- minmax(0,1fr) and an explicit column, for the reasons spelled out on
+           the host's copy of this podium. The phone is where it bit hardest:
+           a thirteen-character name pushed third place off a 390px screen with
+           no way to scroll to it. -->
+      <div style="flex:none;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1fr);gap:5px;align-items:end">
+        <sc-for list="{{ pPodiumRows }}" as="d" hint-placeholder-count="3">
+          <div style="grid-column:{{ d.col }};min-width:0;display:flex;flex-direction:column;gap:1px;padding:7px 8px;border-radius:var(--radius-sm);background:{{ d.bg }};border:1px {{ d.podiumDash }} {{ d.podiumBorder }};box-shadow:{{ d.ring }};opacity:{{ d.opacity }};animation:{{ d.anim }}">
+            <span style="flex:none;font:italic 700 10px/1 var(--font-heading);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:{{ d.pickColor }}">{{ d.podiumLabel }}</span>
+            <span style="flex:none;font-family:var(--font-heading);font-size:17px;font-weight:800;text-transform:uppercase;letter-spacing:.01em;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:{{ d.nameColor }}">{{ d.name }}</span>
+            <span style="flex:none;font-size:9.5px;color:var(--color-muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.detail }}</span>
+            <span style="flex:none;font:italic 700 9px/1.2 var(--font-heading);letter-spacing:.1em;text-transform:uppercase;color:var(--color-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.podiumNote }}</span>
+            <div style="flex:none;height:{{ d.plinth }}"></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex:{{ pBoardFlex }};min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:4px">
+        <sc-for list="{{ pDraftRows }}" as="d" hint-placeholder-count="9">
           <div data-latest="{{ d.latest }}" style="flex:none;display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:var(--radius-sm);background:{{ d.bg }};border:1px solid {{ d.border }};box-shadow:{{ d.ring }};opacity:{{ d.opacity }};animation:{{ d.anim }}">
             <span style="flex:none;width:26px;font-family:var(--font-heading);font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;color:{{ d.pickColor }}">{{ d.pickNum }}</span>
             <span style="flex:1;min-width:0;font-family:var(--font-heading);font-size:19px;font-weight:800;text-transform:uppercase;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:{{ d.nameColor }}">{{ d.name }}</span>
@@ -1090,15 +1136,34 @@ p{letter-spacing:.005em}
           <span style="position:absolute;top:50%;left:80%;transform:translate(-50%,-50%);font-family:var(--font-heading);font-size:clamp(12px,.95vw,20px);font-weight:800;letter-spacing:.06em;color:color-mix(in srgb, var(--color-text) 26%, transparent)">20</span>
           <span style="position:absolute;top:50%;left:90%;transform:translate(-50%,-50%);font-family:var(--font-heading);font-size:clamp(12px,.95vw,20px);font-weight:800;letter-spacing:.06em;color:color-mix(in srgb, var(--color-text) 26%, transparent)">10</span>
         </div>
-        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform-origin:left center;transform:scaleX({{ clockFrac }});will-change:transform;background:linear-gradient(90deg,color-mix(in srgb,var(--color-accent) 8%,transparent),color-mix(in srgb,var(--color-accent) 30%,transparent));transition:transform .9s linear"></div>
+        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform-origin:left center;transform:scaleX({{ driveFrac }});will-change:transform;background:linear-gradient(90deg,color-mix(in srgb,var(--color-accent) 8%,transparent),color-mix(in srgb,var(--color-accent) 30%,transparent));transition:transform .9s linear"></div>
         <!-- Same wrapper trick as the phone, and for the same second reason:
              a width:100% child translated by a percentage travels the BAR,
              not the viewport. The vw arithmetic overshot by the host padding
-             at both ends. -->
-        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform:translateX({{ clockPctStr }});will-change:transform;transition:transform .9s linear">
+             at both ends.
+
+             Both wrappers ride driveFrac's twin so the runner and the line of
+             scrimmage stay welded together — same inset on both, or the ball
+             stops sitting on its own line.
+
+             The inset is what keeps the ball whole. The runner is centred on
+             the line of scrimmage inside a bar that clips, so travelling the
+             full 0-100% put half a football outside the frame at each end: at
+             0:30 that read as a rendering fault, and once the drive actually
+             reached 0:00 the ball would have vanished off the right edge
+             entirely. Inset by a bit more than half the widest ball, the
+             runner is whole at both ends and still crosses the goal line at
+             94% with room to spare.
+
+             46px is half the runner GROUP, not half the ball: the streaks and
+             the ball sit in one flex row centred on the line, so the ball's
+             far edge is 44.5px out at full size, not 28px. Fixed pixels and
+             not a vw clamp, so the travel stays a fraction of the bar — the
+             viewport is what sent this ball off the end once already. -->
+        <div style="position:absolute;top:0;bottom:0;left:46px;right:46px;transform:translateX({{ drivePctStr }});will-change:transform;transition:transform .9s linear">
           <div style="position:absolute;top:0;bottom:0;left:0;width:2px;background:{{ clockColor }};box-shadow:0 0 16px {{ clockGlow }}"></div>
         </div>
-        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform:translateX({{ clockPctStr }});will-change:transform;transition:transform .9s linear">
+        <div style="position:absolute;top:0;bottom:0;left:46px;right:46px;transform:translateX({{ drivePctStr }});will-change:transform;transition:transform .9s linear">
         <div style="position:absolute;top:50%;left:0;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px">
           <span style="display:flex;gap:4px;opacity:.55">
             <span style="width:14px;height:2px;border-radius:1px;background:{{ clockColor }};animation:lofgLegs .32s ease-in-out infinite"></span>
@@ -1199,8 +1264,36 @@ p{letter-spacing:.005em}
           <button sc-camel-on-click="{{ downloadCardTap }}" style="cursor:pointer;min-height:56px;padding:0 22px;border-radius:var(--radius-md);border:1px solid var(--color-line-strong);background:transparent;color:var(--color-muted-strong);font-size:clamp(13px,1.1vw,16px);font-weight:500;white-space:nowrap" style-hover="border-color:var(--color-accent);color:var(--color-accent-200)">Download card</button>
         </div>
       </div>
-      <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:minmax(0,1fr);gap:clamp(5px,.7vw,11px)">
-        <sc-for list="{{ draftRows }}" as="d" hint-placeholder-count="12">
+      <!-- The podium. Second, first, third — left to right, the way one gets
+           built, so the tall plinth lands in the middle of the TV rather than
+           at the end of a sorted list. Heights come from the row (`plinth`)
+           because a three-hander renders a shorter podium, not a broken one.
+
+           minmax(0,1fr), not 1fr. A bare 1fr is minmax(auto,1fr), and a grid
+           item's auto minimum is its content — so the nowrap nameplate below
+           sets the track's floor, the ellipsis can never fire, and the tracks
+           push each other off the screen instead. Thirteen characters did it
+           on a phone. The picks 4-12 grid had this right; the podium did not.
+
+           The column is explicit rather than auto-placed. Auto-placement fills
+           from column 1, which put a solo winner in the narrow left-hand track
+           with the wide centre sitting empty. -->
+      <div style="flex:none;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,1fr);gap:clamp(8px,1vw,18px);align-items:end">
+        <sc-for list="{{ podiumRows }}" as="d" hint-placeholder-count="3">
+          <div style="grid-column:{{ d.col }};min-width:0;display:flex;flex-direction:column;gap:clamp(2px,.5vh,6px);padding:clamp(8px,1.4vh,16px) clamp(10px,1.1vw,18px);border-radius:var(--radius-md);background:{{ d.bg }};border:1px {{ d.podiumDash }} {{ d.podiumBorder }};opacity:{{ d.podiumOpacity }};animation:{{ d.anim }}">
+            <span style="flex:none;font:italic 700 clamp(11px,.8vw,16px)/1 var(--font-heading);letter-spacing:.16em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:{{ d.pickColor }}">{{ d.podiumLabel }}</span>
+            <span style="flex:none;font-family:var(--font-heading);font-size:clamp(20px,2.2vw,46px);font-weight:800;text-transform:uppercase;letter-spacing:.01em;line-height:.95;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:{{ d.nameColor }}">{{ d.name }}</span>
+            <span style="flex:none;font-size:clamp(10px,.9vw,14px);color:var(--color-muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.detail }}</span>
+            <span style="flex:none;font-size:clamp(10px,.85vw,13px);color:var(--color-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.podiumNote }}</span>
+            <div style="flex:none;height:{{ d.plinth }}"></div>
+          </div>
+        </sc-for>
+      </div>
+      <!-- Three across, so a full twelve-man league leaves picks 4-12 as a
+           clean 3x3 under the podium. Rows stay on 1fr: content-height rows
+           filled the top third of the TV and left the rest of it black. -->
+      <div style="flex:{{ boardFlex }};min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:clamp(5px,.7vw,11px)">
+        <sc-for list="{{ draftRows }}" as="d" hint-placeholder-count="9">
           <div style="display:flex;align-items:stretch;border-radius:var(--radius-md);overflow:hidden;background:{{ d.bg }};border:1px solid {{ d.border }};opacity:{{ d.opacity }};animation:{{ d.anim }}">
             <span style="flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0 clamp(9px,1vw,15px);background:rgba(0,0,0,.3);border-right:1px solid {{ d.border }};min-width:clamp(50px,4.8vw,82px)">
               <span style="font:italic 700 clamp(11px,.6vw,14px)/1 var(--font-heading);letter-spacing:.18em;text-transform:uppercase;color:var(--color-muted)">Pick</span>
@@ -1226,6 +1319,25 @@ p{letter-spacing:.005em}
 const SB_URL = "https://qbzsinhlzuxdjvwfurxe.supabase.co";
 const SB_KEY = "sb_publishable_qMEuvB-ugPpbf26vZYCrhg_-AY6hull";
 const QUESTION_SECONDS = 30;
+// How long 0:00 stays on screen before the results cut in.
+//
+// The bar's movers carry `transition: transform .9s linear`, so the last tick
+// does not arrive instantly — it animates. Ending the question in the same
+// task that set secondsLeft to 0 unmounted the question screen mid-transition:
+// driveFrac never rendered above .967, the ball stopped about three yards out
+// and the field never finished painting. The one frame the whole thirty
+// seconds is built towards was the one frame nobody ever saw.
+//
+// This MUST stay >= the transition duration in those five inline styles. It is
+// the whistle beat: the clock reads 0:00, the ball breaks the plane, then the
+// call. A whistle blown early skips it, which is correct — that drive was cut
+// short on purpose.
+const DRIVE_LAND_MS = 900;
+// What a podium plinth says before its pick lands. One string, because the TV
+// and the phone are describing the same unrevealed pick to the same room —
+// they had drifted to "Still hooded" and "Hooded" off two different conditions.
+// A pick that is on the clock is not hooded any more, so it keeps its own note.
+const HOODED_NOTE = "Still hooded";
 const QUESTIONS_PER_TIER = 3;
 // I and O are held out so a code cannot be misread as 1 or 0 across a lit
 // room. The mint and the join filter both read from here now; they used to
@@ -2095,7 +2207,14 @@ class Component extends DCLogic {
       this.tick = setInterval(() => {
         const left = Math.max(0, QUESTION_SECONDS - Math.round((Date.now() - this.qStart) / 1000));
         this.setState({ secondsLeft: left }, this.broadcast);
-        if (left <= 0) this.endQuestion();
+        if (left <= 0) {
+          // Stop the clock and the bots first, so nothing lands during the
+          // hold and gets scored at a time past the end of the play. Then let
+          // the 0:00 frame — already broadcast above, so twelve phones are
+          // running the same beat — finish before the results take the screen.
+          this.stopClock(); this.clearDemo();
+          this.planeHold = setTimeout(this.endQuestion, DRIVE_LAND_MS);
+        }
       }, 1000);
       this.scheduleDemo(i);
     });
@@ -2115,6 +2234,10 @@ class Component extends DCLogic {
   clearDemo() { (this.demoTimers || []).forEach(clearTimeout); this.demoTimers = []; }
   stopClock() {
     if (this.tick) { clearInterval(this.tick); this.tick = null; }
+    // A whistle blown during the landing beat, or an Exit, has to cancel it —
+    // otherwise endQuestion fires a second time a beat later, into whatever
+    // screen replaced this one.
+    if (this.planeHold) { clearTimeout(this.planeHold); this.planeHold = null; }
     if (this.revealTimer) { clearInterval(this.revealTimer); this.revealTimer = null; }
     if (this.revealHold) { clearTimeout(this.revealHold); this.revealHold = null; }
     if (this.introTimer) { clearTimeout(this.introTimer); this.introTimer = null; }
@@ -2214,6 +2337,16 @@ class Component extends DCLogic {
     this.send({ t: "state", s });
     this.saveSession();
   };
+  // One wording table, read by the TV and by every phone in the room. These
+  // lines used to exist only on the host; when the phone grew the same panel
+  // the obvious move was to copy them, which is how the TV and the phone end
+  // up calling the same play two different ways by August.
+  shameFor(nWrong, nAll, soloName) {
+    return nWrong === nAll ? "Nobody knew this. Embarrassing, all of you."
+      : soloName ? `Only ${soloName} blew it. Everyone look.`
+      : nWrong === 1 ? "One casualty."
+      : `${nWrong} of you should be ashamed.`;
+  }
   fastest() {
     const i = this.state.qIndex, q = this.state.questions[i]; if (!q) return null;
     const row = this.state.answers[i] || {};
@@ -2502,8 +2635,13 @@ class Component extends DCLogic {
         // times a night. The percentage matters — a translateX in vw measures
         // the viewport, and this bar is neither the viewport's width nor a
         // fixed fraction of it.
-        v.clockFrac = frac.toFixed(3);
-        v.clockPctStr = (frac * 100).toFixed(2) + "%";
+        //
+        // The bar reads as a drive, not as a draining tank: the ball starts on
+        // its own goal line at 0:30 and breaks the plane at 0:00, so the field
+        // paints in BEHIND the runner. That is 1 - frac. The numerals and the
+        // glow still key off time remaining — only the geometry inverted.
+        v.driveFrac = (1 - frac).toFixed(3);
+        v.drivePctStr = ((1 - frac) * 100).toFixed(2) + "%";
         // A frozen clock that still looks live is the lie. Once the link is
         // stale the numeral goes grey, the blink stops, and the status line
         // says what is actually happening.
@@ -2552,7 +2690,36 @@ class Component extends DCLogic {
         v.pVerdict = right ? "Touchdown" : mine ? "Sacked" : "Delay of game";
         v.pVerdictColor = right ? "var(--color-accent-300)" : "var(--color-penalty)";
         v.correctText = s.options[s.correct];
-        v.pTimeNote = mine ? `You answered in ${fmt(mine.ms)}` + (s.fastest ? ` \u00b7 fastest was ${s.fastest.name} at ${fmt(s.fastest.ms)}` : "") : "The clock beat you.";
+        // The fastest whistle used to be tacked onto the end of this line.
+        // It has its own row now, the way the TV shows it, so saying it twice
+        // would just cost a phone two lines of the board.
+        v.pTimeNote = mine ? `You answered in ${fmt(mine.ms)}` : "The clock beat you.";
+
+        // \u2500\u2500 The call, as the TV calls it \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+        // Nothing new crosses the wire for any of this. `myAnswers` is the
+        // whole room's row for this question \u2014 not just mine, despite the
+        // name \u2014 and `board` carries every player's id and name, so the
+        // phone can work out who was on the board and who was not.
+        //
+        // The room is small and the phone is not the TV, so the correct list
+        // is a count rather than twelve chips: the scoreboard directly below
+        // already names everyone. The flag keeps its names, because being
+        // named is the entire point of the flag.
+        const qRow = s.myAnswers || {};
+        const roster = s.board || [];
+        v.pFastestLabel = s.fastest ? `${s.fastest.name} \u00b7 ${fmt(s.fastest.ms)}` : "Nobody moved the ball.";
+        const pAnswered = roster.filter((b) => qRow[b.id]);
+        const pCor = pAnswered.filter((b) => qRow[b.id].opt === s.correct);
+        v.pOnBoardNote = `${pCor.length} of ${roster.length} on the board`;
+        const pWrong = pAnswered.filter((b) => qRow[b.id].opt !== s.correct);
+        const pNoAns = roster.filter((b) => !qRow[b.id]);
+        v.pWrongList = pWrong.slice().sort((a, b) => qRow[a.id].ms - qRow[b.id].ms)
+          .map((b) => ({ label: `${b.name} \u00b7 ${"ABCD"[qRow[b.id].opt]}` }))
+          .concat(pNoAns.map((b) => ({ label: `${b.name} \u00b7 \u2014` })));
+        const pNWrong = pWrong.length + pNoAns.length;
+        v.pHasWrong = pNWrong > 0;
+        const pSolo = pNWrong === 1 ? (pWrong[0] || pNoAns[0]) : null;
+        v.pShameLine = this.shameFor(pNWrong, roster.length, pSolo && pSolo.name);
 
         // \u2500\u2500 The board, and your place on it \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
         // The whole room, every time. This was `slice(0, 6)`, so anyone
@@ -2662,7 +2829,7 @@ class Component extends DCLogic {
         // counted down to it, the one below it is on the clock, the rest are
         // held back. Pick order top to bottom, so it reads as the same draft
         // board rather than a different view of it.
-        v.pDraftRows = order.map((p) => {
+        const pRowFor = (p) => {
           const pick = p.rank;
           const shown = pick >= firstShown;
           const onClock = !shown && pick === firstShown - 1 && revealed < total;
@@ -2688,9 +2855,47 @@ class Component extends DCLogic {
               : onClock ? "lofgPulse 1.4s ease-in-out infinite" : "none",
             pickColor: first ? "var(--color-accent-200)" : "var(--color-muted)",
             nameColor: shown ? (mine ? "var(--color-accent-200)" : "var(--color-text)")
-              : onClock ? "var(--onair-ink)" : "var(--color-muted)"
+              : onClock ? "var(--onair-ink)" : "var(--color-muted)",
+            // State the podium reads, said out loud. It used to infer this
+            // from `opacity`, which is a string here and a number on the host,
+            // so the two screens tested the same idea two different ways.
+            revealed: shown, onClock,
+            // Podium only; the list ignores these.
+            plinth: "", podiumLabel: "", podiumNote: "", podiumDash: "", podiumBorder: ""
           };
+        };
+        // The phone gets the TV's podium, because the phone IS the broadcast
+        // for anyone not in the room. Same second-first-third arrangement, on
+        // a plinth scaled to a 390px screen.
+        //
+        // The board is still whole: picks 1-3 move into pPodiumRows and 4-12
+        // stay in pDraftRows, and between them every pick is on screen exactly
+        // once. failure.test.js asserts that union, not either list's length.
+        //
+        // Splitting rather than rendering twice matters for the auto-scroll:
+        // componentDidUpdate takes the FIRST [data-latest="1"] in the document,
+        // so a hidden duplicate above the list would swallow the scroll.
+        const pRows = order.map(pRowFor);
+        const byPick = (n) => pRows.find((r) => Number(r.pickNum) === n);
+        const P_PODIUM = [
+          { pick: 2, col: 1, plinth: "clamp(6px,1.4vh,13px)", note: "" },
+          { pick: 1, col: 2, plinth: "clamp(14px,3.2vh,28px)", note: "First overall" },
+          { pick: 3, col: 3, plinth: "0px", note: "" }
+        ];
+        v.pPodiumRows = P_PODIUM.filter((slot) => byPick(slot.pick)).map((slot) => {
+          const row = byPick(slot.pick);
+          row.plinth = slot.plinth;
+          row.col = String(slot.col);
+          row.podiumLabel = "Pick " + slot.pick;
+          row.podiumNote = (row.revealed || row.onClock) ? slot.note : HOODED_NOTE;
+          row.podiumDash = row.revealed ? "solid" : "dashed";
+          row.podiumBorder = row.revealed ? row.border : "var(--color-line-strong)";
+          return row;
         });
+        v.pDraftRows = pRows.filter((r) => Number(r.pickNum) >= 4);
+        // See boardFlex on the host: an empty scroll region on flex:1 still
+        // takes its share of a phone screen that has none to spare.
+        v.pBoardFlex = v.pDraftRows.length ? "1" : "none";
         v.pRevealHeadline = revealed === 0 ? "The board is set."
           : revealed >= total ? `${order[0] ? order[0].name : "\u2014"} is on the clock.`
           : `Pick ${firstShown} is in.`;
@@ -2804,10 +3009,13 @@ class Component extends DCLogic {
         v.correctText = q.options[q.correct];
         const frac = Math.max(0, Math.min(1, st.secondsLeft / QUESTION_SECONDS));
         v.clock = mmss(st.secondsLeft);
-        v.clockFrac = frac.toFixed(3);
         // One value drives the fill, the playhead and the runner, and it is a
         // percentage of the bar rather than of the viewport.
-        v.clockPctStr = (frac * 100).toFixed(2) + "%";
+        //
+        // See the phone's copy of this: the field paints in behind the drive,
+        // so the geometry runs on 1 - frac while the numerals stay on frac.
+        v.driveFrac = (1 - frac).toFixed(3);
+        v.drivePctStr = ((1 - frac) * 100).toFixed(2) + "%";
         v.clockColor = st.secondsLeft <= 10 ? "#fff" : "var(--onair-ink)";
         v.clockGlow = st.secondsLeft <= 10 ? "rgba(212,24,24,.75)" : "rgba(212,24,24,.35)";
         v.clockBorder = st.secondsLeft <= 10 ? "var(--color-onair)" : "var(--color-clock-idle)";
@@ -2819,11 +3027,17 @@ class Component extends DCLogic {
         });
         const f = this.fastest();
         v.fastestLabel = f ? `${f.name} \u00b7 ${fmt(f.ms)}` : "Nobody moved the ball.";
-        const cor = st.players.filter((p) => row[p.id] && row[p.id].opt === q.correct);
+        // Ranked, not join order. The phone builds its flag off the broadcast
+        // `board`, which is ranked, and this side was walking `players` in the
+        // order people checked in \u2014 so the same play named the same people in
+        // two different sequences on the TV and in twelve hands. The sorts
+        // below are stable, so the input order is what leaked through: on the
+        // no-answer block always, and on the wrong block whenever times tied.
+        const cor = order.filter((p) => row[p.id] && row[p.id].opt === q.correct);
         v.correctCount = cor.length;
         v.correctList = cor.sort((a, b) => row[a.id].ms - row[b.id].ms).map((p) => ({ label: `${p.name} \u00b7 ${fmt(row[p.id].ms)}` }));
-        const wrong = st.players.filter((p) => row[p.id] && row[p.id].opt !== q.correct);
-        const noAns = st.players.filter((p) => !row[p.id]);
+        const wrong = order.filter((p) => row[p.id] && row[p.id].opt !== q.correct);
+        const noAns = order.filter((p) => !row[p.id]);
         v.wrongList = wrong.sort((a, b) => row[a.id].ms - row[b.id].ms)
           .map((p) => ({ label: `${p.name} \u00b7 ${"ABCD"[row[p.id].opt]}` }))
           .concat(noAns.map((p) => ({ label: `${p.name} \u00b7 \u2014` })));
@@ -2831,11 +3045,7 @@ class Component extends DCLogic {
         v.hasWrong = v.wrongCount > 0;
         const nWrong = v.wrongCount, nAll = st.players.length;
         const solo = nWrong === 1 ? (wrong[0] || noAns[0]) : null;
-        v.shameLine = nWrong === nAll
-          ? "Nobody knew this. Embarrassing, all of you."
-          : solo
-            ? `Only ${solo.name} blew it. Everyone look.`
-            : nWrong === 1 ? "One casualty." : `${nWrong} of you should be ashamed.`;
+        v.shameLine = this.shameFor(nWrong, nAll, solo && solo.name);
         v.nextLabel = st.qIndex + 1 >= st.questions.length ? "Reveal the draft order" : `Next question (${st.qIndex + 2} of ${st.questions.length})`;
       }
       v.board = order.map((p, k) => ({
@@ -2849,7 +3059,7 @@ class Component extends DCLogic {
         const revealed = st.revealCount;
         const firstShown = total - revealed + 1;
         v.revealHeadline = revealed === 0 ? "The board is set." : revealed >= total ? `${order[0] ? order[0].name : "\u2014"} is on the clock.` : `Pick ${firstShown} is in.`;
-        v.draftRows = order.map((p, k) => {
+        const rowFor = (p, k) => {
           const pick = k + 1, shown = pick >= firstShown;
           const onClock = !shown && pick === firstShown - 1 && revealed < total;
           const first = shown && pick === 1;
@@ -2861,9 +3071,61 @@ class Component extends DCLogic {
             opacity: shown ? 1 : onClock ? 0.85 : 0.3,
             anim: shown ? "lofgSlam .5s ease-out" : onClock ? "lofgPulse 1.4s ease-in-out infinite" : "none",
             pickColor: first ? "var(--color-accent-200)" : "color-mix(in srgb,var(--color-text) 45%,transparent)",
-            nameColor: shown ? "var(--color-text)" : "var(--onair-ink)"
+            nameColor: shown ? "var(--color-text)" : "var(--onair-ink)",
+            // See the phone's copy: the podium reads the state, not a colour.
+            revealed: shown, onClock,
+            // Only the podium reads these.
+            plinth: "", podiumLabel: "", podiumNote: "", podiumDash: "", podiumOpacity: "", podiumBorder: ""
           };
+        };
+        // The top three get a podium, in the order a podium is actually built:
+        // second on the left, first raised in the middle, third on the right.
+        // Everything from pick four down keeps the flat grid.
+        //
+        // Indices are filtered rather than assumed, because a three-hander is
+        // a legal game \u2014 order[2] does not always exist, and reading .name off
+        // undefined would take the whole reveal down at the moment it matters
+        // most. The podium simply gets shorter.
+        // `plinth` is the height of the PEDESTAL under the nameplate, not the
+        // height of the card. Sizing the card itself meant the short plinths
+        // were shorter than their own contents, and `overflow:hidden` ate the
+        // pick label off the top of third place. A pedestal cannot clip
+        // anything: the card is content-height plus this.
+        // `col` is carried rather than inferred: the slots are filtered for
+        // short rosters, so the surviving entries' positions in this array are
+        // no longer their positions on the podium. First place stays in the
+        // centre track whether or not it has anyone standing next to it.
+        const PODIUM = [
+          { idx: 1, col: 1, plinth: "clamp(10px,2.2vh,24px)", note: "Second off the board." },
+          { idx: 0, col: 2, plinth: "clamp(26px,5.4vh,58px)", note: "Revealed last. Winner takes the podium." },
+          { idx: 2, col: 3, plinth: "0px", note: "Third off the board." }
+        ];
+        v.podiumRows = PODIUM.filter((slot) => order[slot.idx]).map((slot) => {
+          const row = rowFor(order[slot.idx], slot.idx);
+          row.plinth = slot.plinth;
+          row.col = String(slot.col);
+          // A hooded plinth is a hero element on a TV, so it reads as an empty
+          // frame waiting to be filled rather than as the 0.3-opacity ghost
+          // the flat grid uses. Dashed while hooded, solid once it lands.
+          row.podiumDash = row.revealed ? "solid" : "dashed";
+          row.podiumOpacity = row.revealed ? "1" : "0.85";
+          // --color-row-inert is tuned for a dimmed row in a dense grid. On a
+          // plinth with three times the area it disappears into the ground.
+          row.podiumBorder = row.revealed ? row.border : "var(--color-line-strong)";
+          row.podiumLabel = slot.idx === 0 ? "Pick 1 \u00b7 First overall" : "Pick " + (slot.idx + 1);
+          // Hooded picks show the rule of the moment, not a dead dash alone.
+          // Same expression as the phone's, so neither screen can drift.
+          row.podiumNote = (row.revealed || row.onClock) ? slot.note : HOODED_NOTE;
+          // rowFor leaves a hooded name empty, which collapses the plinth to
+          // its padding. The podium always needs something on the nameplate.
+          if (!row.name) row.name = "\u2014 \u2014 \u2014";
+          return row;
         });
+        v.draftRows = order.slice(3).map((p, i) => rowFor(p, i + 3));
+        // A three-hander has no rows here. Left on flex:1 the empty grid still
+        // claimed its share of the screen — measured at 547px of black on a
+        // 1080p host — because flex-grow does not care that it has no children.
+        v.boardFlex = v.draftRows.length ? "1" : "none";
         v.revealFoot = revealed >= total ? "Copy the order or download the card." : "One pick every few seconds, worst to first.";
         v.copyShare = this.copyShare; v.downloadCard = this.downloadCard;
         // Wrapped so using them does not also cut the reveal read short.
