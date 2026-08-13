@@ -841,6 +841,29 @@ p{letter-spacing:.005em}
              nine read as elimination when twelve points were still live. -->
         <div style="font-size:13px;color:var(--color-accent-300)">{{ pStanding }}</div>
       </div>
+      <!-- The TV's two calls, on the phone. Fastest whistle and how many made
+           it sit on one row; the flag gets its own box under them. -->
+      <div style="flex:none;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+        <span style="flex:none;font:italic 700 11px/1 var(--font-heading);letter-spacing:.16em;text-transform:uppercase;color:var(--color-muted)">Fastest</span>
+        <span style="flex:1;min-width:0;font-family:var(--font-heading);font-size:19px;font-weight:800;text-transform:uppercase;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ pFastestLabel }}</span>
+        <span style="flex:none;font-size:11.5px;color:var(--color-accent-300);font-variant-numeric:tabular-nums;white-space:nowrap">{{ pOnBoardNote }}</span>
+      </div>
+      <sc-if value="{{ pHasWrong }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:none;display:flex;flex-direction:column;gap:6px;padding:9px 10px;border-radius:var(--radius-md);background:color-mix(in srgb,var(--color-penalty) 12%,transparent);border:1px solid color-mix(in srgb,var(--color-penalty) 55%,transparent)">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="flex:none;display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:var(--radius-sm);background:var(--color-penalty)">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--color-penalty-deep);animation:lofgPulse 1s ease-in-out infinite"></span>
+            <span style="font:italic 700 10px/1 var(--font-heading);letter-spacing:.18em;text-transform:uppercase;color:var(--color-penalty-deep)">Flag</span>
+          </span>
+          <span style="flex:1;min-width:0;font-family:var(--font-heading);font-size:16px;font-weight:800;letter-spacing:.005em;color:var(--color-penalty-bright);text-wrap:pretty">{{ pShameLine }}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px">
+          <sc-for list="{{ pWrongList }}" as="w" hint-placeholder-count="4">
+            <span style="display:block;text-align:center;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;padding:5px 7px;border-radius:var(--radius-sm);font-family:var(--font-heading);font-size:14px;font-weight:800;background:var(--color-penalty-deep);color:var(--color-penalty-bright);border:1px solid color-mix(in srgb,var(--color-penalty) 70%,transparent)">{{ w.label }}</span>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
       <div style="flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid var(--color-divider);padding-top:12px;display:flex;flex-direction:column;gap:5px">
         <sc-for list="{{ miniBoard }}" as="r" hint-placeholder-count="12">
           <div data-me="{{ r.me }}" style="flex:none;display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:var(--radius-sm);background:{{ r.rowBg }};box-shadow:{{ r.rowRing }}">
@@ -2251,6 +2274,16 @@ class Component extends DCLogic {
     this.send({ t: "state", s });
     this.saveSession();
   };
+  // One wording table, read by the TV and by every phone in the room. These
+  // lines used to exist only on the host; when the phone grew the same panel
+  // the obvious move was to copy them, which is how the TV and the phone end
+  // up calling the same play two different ways by August.
+  shameFor(nWrong, nAll, soloName) {
+    return nWrong === nAll ? "Nobody knew this. Embarrassing, all of you."
+      : soloName ? `Only ${soloName} blew it. Everyone look.`
+      : nWrong === 1 ? "One casualty."
+      : `${nWrong} of you should be ashamed.`;
+  }
   fastest() {
     const i = this.state.qIndex, q = this.state.questions[i]; if (!q) return null;
     const row = this.state.answers[i] || {};
@@ -2594,7 +2627,36 @@ class Component extends DCLogic {
         v.pVerdict = right ? "Touchdown" : mine ? "Sacked" : "Delay of game";
         v.pVerdictColor = right ? "var(--color-accent-300)" : "var(--color-penalty)";
         v.correctText = s.options[s.correct];
-        v.pTimeNote = mine ? `You answered in ${fmt(mine.ms)}` + (s.fastest ? ` \u00b7 fastest was ${s.fastest.name} at ${fmt(s.fastest.ms)}` : "") : "The clock beat you.";
+        // The fastest whistle used to be tacked onto the end of this line.
+        // It has its own row now, the way the TV shows it, so saying it twice
+        // would just cost a phone two lines of the board.
+        v.pTimeNote = mine ? `You answered in ${fmt(mine.ms)}` : "The clock beat you.";
+
+        // \u2500\u2500 The call, as the TV calls it \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+        // Nothing new crosses the wire for any of this. `myAnswers` is the
+        // whole room's row for this question \u2014 not just mine, despite the
+        // name \u2014 and `board` carries every player's id and name, so the
+        // phone can work out who was on the board and who was not.
+        //
+        // The room is small and the phone is not the TV, so the correct list
+        // is a count rather than twelve chips: the scoreboard directly below
+        // already names everyone. The flag keeps its names, because being
+        // named is the entire point of the flag.
+        const qRow = s.myAnswers || {};
+        const roster = s.board || [];
+        v.pFastestLabel = s.fastest ? `${s.fastest.name} \u00b7 ${fmt(s.fastest.ms)}` : "Nobody moved the ball.";
+        const pAnswered = roster.filter((b) => qRow[b.id]);
+        const pCor = pAnswered.filter((b) => qRow[b.id].opt === s.correct);
+        v.pOnBoardNote = `${pCor.length} of ${roster.length} on the board`;
+        const pWrong = pAnswered.filter((b) => qRow[b.id].opt !== s.correct);
+        const pNoAns = roster.filter((b) => !qRow[b.id]);
+        v.pWrongList = pWrong.slice().sort((a, b) => qRow[a.id].ms - qRow[b.id].ms)
+          .map((b) => ({ label: `${b.name} \u00b7 ${"ABCD"[qRow[b.id].opt]}` }))
+          .concat(pNoAns.map((b) => ({ label: `${b.name} \u00b7 \u2014` })));
+        const pNWrong = pWrong.length + pNoAns.length;
+        v.pHasWrong = pNWrong > 0;
+        const pSolo = pNWrong === 1 ? (pWrong[0] || pNoAns[0]) : null;
+        v.pShameLine = this.shameFor(pNWrong, roster.length, pSolo && pSolo.name);
 
         // \u2500\u2500 The board, and your place on it \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
         // The whole room, every time. This was `slice(0, 6)`, so anyone
@@ -2906,11 +2968,7 @@ class Component extends DCLogic {
         v.hasWrong = v.wrongCount > 0;
         const nWrong = v.wrongCount, nAll = st.players.length;
         const solo = nWrong === 1 ? (wrong[0] || noAns[0]) : null;
-        v.shameLine = nWrong === nAll
-          ? "Nobody knew this. Embarrassing, all of you."
-          : solo
-            ? `Only ${solo.name} blew it. Everyone look.`
-            : nWrong === 1 ? "One casualty." : `${nWrong} of you should be ashamed.`;
+        v.shameLine = this.shameFor(nWrong, nAll, solo && solo.name);
         v.nextLabel = st.qIndex + 1 >= st.questions.length ? "Reveal the draft order" : `Next question (${st.qIndex + 2} of ${st.questions.length})`;
       }
       v.board = order.map((p, k) => ({
