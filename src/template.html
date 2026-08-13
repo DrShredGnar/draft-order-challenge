@@ -2974,11 +2974,17 @@ class Component extends DCLogic {
         });
         const f = this.fastest();
         v.fastestLabel = f ? `${f.name} \u00b7 ${fmt(f.ms)}` : "Nobody moved the ball.";
-        const cor = st.players.filter((p) => row[p.id] && row[p.id].opt === q.correct);
+        // Ranked, not join order. The phone builds its flag off the broadcast
+        // `board`, which is ranked, and this side was walking `players` in the
+        // order people checked in \u2014 so the same play named the same people in
+        // two different sequences on the TV and in twelve hands. The sorts
+        // below are stable, so the input order is what leaked through: on the
+        // no-answer block always, and on the wrong block whenever times tied.
+        const cor = order.filter((p) => row[p.id] && row[p.id].opt === q.correct);
         v.correctCount = cor.length;
         v.correctList = cor.sort((a, b) => row[a.id].ms - row[b.id].ms).map((p) => ({ label: `${p.name} \u00b7 ${fmt(row[p.id].ms)}` }));
-        const wrong = st.players.filter((p) => row[p.id] && row[p.id].opt !== q.correct);
-        const noAns = st.players.filter((p) => !row[p.id]);
+        const wrong = order.filter((p) => row[p.id] && row[p.id].opt !== q.correct);
+        const noAns = order.filter((p) => !row[p.id]);
         v.wrongList = wrong.sort((a, b) => row[a.id].ms - row[b.id].ms)
           .map((p) => ({ label: `${p.name} \u00b7 ${"ABCD"[row[p.id].opt]}` }))
           .concat(noAns.map((p) => ({ label: `${p.name} \u00b7 \u2014` })));
