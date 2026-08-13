@@ -1346,7 +1346,9 @@ const DRIVE_LAND_MS = 900;
 // and the phone are describing the same unrevealed pick to the same room —
 // they had drifted to "Still hooded" and "Hooded" off two different conditions.
 // A pick that is on the clock is not hooded any more, so it keeps its own note.
-const HOODED_NOTE = "Still hooded";
+// "Still hooded" was jargon nobody outside this file used — a plinth that has
+// not been filled in yet needs to say so in words, not in a metaphor.
+const HOODED_NOTE = "Still to come";
 const QUESTIONS_PER_TIER = 3;
 // I and O are held out so a code cannot be misread as 1 or 0 across a lit
 // room. The mint and the join filter both read from here now; they used to
@@ -3110,7 +3112,13 @@ class Component extends DCLogic {
         // centre track whether or not it has anyone standing next to it.
         const PODIUM = [
           { idx: 1, col: 1, plinth: "clamp(10px,2.2vh,24px)", note: "Second off the board." },
-          { idx: 0, col: 2, plinth: "clamp(26px,5.4vh,58px)", note: "Revealed last. Winner takes the podium." },
+          // No caption on the winner. "Revealed last" described the mechanics
+          // of the read rather than the prize, and the moment it landed it was
+          // also untrue. Everything worth saying is already on this card in
+          // bigger type — the label reads "Pick 1 · First overall" and the
+          // name is the largest thing on the television. A line under it could
+          // only repeat one of them.
+          { idx: 0, col: 2, plinth: "clamp(26px,5.4vh,58px)", note: "" },
           { idx: 2, col: 3, plinth: "0px", note: "Third off the board." }
         ];
         v.podiumRows = PODIUM.filter((slot) => order[slot.idx]).map((slot) => {
