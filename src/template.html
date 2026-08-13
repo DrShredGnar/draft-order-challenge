@@ -791,7 +791,7 @@ p{letter-spacing:.005em}
         <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(90deg,transparent 0,transparent calc(10% - 1px),color-mix(in srgb, var(--color-text) 12%, transparent) calc(10% - 1px),color-mix(in srgb, var(--color-text) 12%, transparent) 10%)"></div>
         <!-- transform:scaleX off a fixed-width track instead of animating
              `width`: same picture, composited instead of re-laid-out. -->
-        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform-origin:left center;transform:scaleX({{ clockFrac }});will-change:transform;background:linear-gradient(90deg,color-mix(in srgb,var(--color-accent) 8%,transparent),color-mix(in srgb,var(--color-accent) 28%,transparent));transition:transform .9s linear"></div>
+        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform-origin:left center;transform:scaleX({{ driveFrac }});will-change:transform;background:linear-gradient(90deg,color-mix(in srgb,var(--color-accent) 8%,transparent),color-mix(in srgb,var(--color-accent) 28%,transparent));transition:transform .9s linear"></div>
         <!-- The runner travels on a wrapper, not on itself. Two reasons, and
              the first one is why the ball sat dead at the left edge on every
              phone: an element that is running lofgBob has its `transform`
@@ -805,7 +805,7 @@ p{letter-spacing:.005em}
              viewport instead, which is wider than this bar on every screen —
              the column is capped at 560px and padded — so the ball also ran
              off the right end into the overflow near zero. -->
-        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform:translateX({{ clockPctStr }});will-change:transform;transition:transform .9s linear">
+        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform:translateX({{ drivePctStr }});will-change:transform;transition:transform .9s linear">
           <svg sc-camel-view-box="0 0 48 30" width="30" height="19" style="position:absolute;top:50%;left:-15px;margin-top:-9.5px;animation:lofgBob .42s ease-in-out infinite">
             <ellipse cx="24" cy="15" rx="22" ry="13" fill="#6b3a1f" stroke="var(--color-accent-100)" stroke-width="2.5"></ellipse>
             <path d="M7 15h8M33 15h8M18 15h12M20 10.5v9M24 10.5v9M28 10.5v9" stroke="var(--color-accent-100)" stroke-width="2.5" stroke-linecap="round"></path>
@@ -1090,15 +1090,20 @@ p{letter-spacing:.005em}
           <span style="position:absolute;top:50%;left:80%;transform:translate(-50%,-50%);font-family:var(--font-heading);font-size:clamp(12px,.95vw,20px);font-weight:800;letter-spacing:.06em;color:color-mix(in srgb, var(--color-text) 26%, transparent)">20</span>
           <span style="position:absolute;top:50%;left:90%;transform:translate(-50%,-50%);font-family:var(--font-heading);font-size:clamp(12px,.95vw,20px);font-weight:800;letter-spacing:.06em;color:color-mix(in srgb, var(--color-text) 26%, transparent)">10</span>
         </div>
-        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform-origin:left center;transform:scaleX({{ clockFrac }});will-change:transform;background:linear-gradient(90deg,color-mix(in srgb,var(--color-accent) 8%,transparent),color-mix(in srgb,var(--color-accent) 30%,transparent));transition:transform .9s linear"></div>
+        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform-origin:left center;transform:scaleX({{ driveFrac }});will-change:transform;background:linear-gradient(90deg,color-mix(in srgb,var(--color-accent) 8%,transparent),color-mix(in srgb,var(--color-accent) 30%,transparent));transition:transform .9s linear"></div>
         <!-- Same wrapper trick as the phone, and for the same second reason:
              a width:100% child translated by a percentage travels the BAR,
              not the viewport. The vw arithmetic overshot by the host padding
-             at both ends. -->
-        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform:translateX({{ clockPctStr }});will-change:transform;transition:transform .9s linear">
+             at both ends.
+
+             Both wrappers ride driveFrac's twin so the runner and the line of
+             scrimmage stay welded together. The ball is centred on that line,
+             which is why it sits half inside an end zone at each end of the
+             play: its own goal line at 0:30, and breaking the plane at 0:00. -->
+        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform:translateX({{ drivePctStr }});will-change:transform;transition:transform .9s linear">
           <div style="position:absolute;top:0;bottom:0;left:0;width:2px;background:{{ clockColor }};box-shadow:0 0 16px {{ clockGlow }}"></div>
         </div>
-        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform:translateX({{ clockPctStr }});will-change:transform;transition:transform .9s linear">
+        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform:translateX({{ drivePctStr }});will-change:transform;transition:transform .9s linear">
         <div style="position:absolute;top:50%;left:0;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px">
           <span style="display:flex;gap:4px;opacity:.55">
             <span style="width:14px;height:2px;border-radius:1px;background:{{ clockColor }};animation:lofgLegs .32s ease-in-out infinite"></span>
@@ -2502,8 +2507,13 @@ class Component extends DCLogic {
         // times a night. The percentage matters — a translateX in vw measures
         // the viewport, and this bar is neither the viewport's width nor a
         // fixed fraction of it.
-        v.clockFrac = frac.toFixed(3);
-        v.clockPctStr = (frac * 100).toFixed(2) + "%";
+        //
+        // The bar reads as a drive, not as a draining tank: the ball starts on
+        // its own goal line at 0:30 and breaks the plane at 0:00, so the field
+        // paints in BEHIND the runner. That is 1 - frac. The numerals and the
+        // glow still key off time remaining — only the geometry inverted.
+        v.driveFrac = (1 - frac).toFixed(3);
+        v.drivePctStr = ((1 - frac) * 100).toFixed(2) + "%";
         // A frozen clock that still looks live is the lie. Once the link is
         // stale the numeral goes grey, the blink stops, and the status line
         // says what is actually happening.
@@ -2804,10 +2814,13 @@ class Component extends DCLogic {
         v.correctText = q.options[q.correct];
         const frac = Math.max(0, Math.min(1, st.secondsLeft / QUESTION_SECONDS));
         v.clock = mmss(st.secondsLeft);
-        v.clockFrac = frac.toFixed(3);
         // One value drives the fill, the playhead and the runner, and it is a
         // percentage of the bar rather than of the viewport.
-        v.clockPctStr = (frac * 100).toFixed(2) + "%";
+        //
+        // See the phone's copy of this: the field paints in behind the drive,
+        // so the geometry runs on 1 - frac while the numerals stay on frac.
+        v.driveFrac = (1 - frac).toFixed(3);
+        v.drivePctStr = ((1 - frac) * 100).toFixed(2) + "%";
         v.clockColor = st.secondsLeft <= 10 ? "#fff" : "var(--onair-ink)";
         v.clockGlow = st.secondsLeft <= 10 ? "rgba(212,24,24,.75)" : "rgba(212,24,24,.35)";
         v.clockBorder = st.secondsLeft <= 10 ? "var(--color-onair)" : "var(--color-clock-idle)";
