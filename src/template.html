@@ -1333,6 +1333,11 @@ const QUESTION_SECONDS = 30;
 // call. A whistle blown early skips it, which is correct — that drive was cut
 // short on purpose.
 const DRIVE_LAND_MS = 900;
+// What a podium plinth says before its pick lands. One string, because the TV
+// and the phone are describing the same unrevealed pick to the same room —
+// they had drifted to "Still hooded" and "Hooded" off two different conditions.
+// A pick that is on the clock is not hooded any more, so it keeps its own note.
+const HOODED_NOTE = "Still hooded";
 const QUESTIONS_PER_TIER = 3;
 // I and O are held out so a code cannot be misread as 1 or 0 across a lit
 // room. The mint and the join filter both read from here now; they used to
@@ -2851,6 +2856,10 @@ class Component extends DCLogic {
             pickColor: first ? "var(--color-accent-200)" : "var(--color-muted)",
             nameColor: shown ? (mine ? "var(--color-accent-200)" : "var(--color-text)")
               : onClock ? "var(--onair-ink)" : "var(--color-muted)",
+            // State the podium reads, said out loud. It used to infer this
+            // from `opacity`, which is a string here and a number on the host,
+            // so the two screens tested the same idea two different ways.
+            revealed: shown, onClock,
             // Podium only; the list ignores these.
             plinth: "", podiumLabel: "", podiumNote: "", podiumDash: "", podiumBorder: ""
           };
@@ -2878,9 +2887,9 @@ class Component extends DCLogic {
           row.plinth = slot.plinth;
           row.col = String(slot.col);
           row.podiumLabel = "Pick " + slot.pick;
-          row.podiumNote = row.opacity === "1" ? slot.note : "Hooded";
-          row.podiumDash = row.opacity === "1" ? "solid" : "dashed";
-          row.podiumBorder = row.opacity === "1" ? row.border : "var(--color-line-strong)";
+          row.podiumNote = (row.revealed || row.onClock) ? slot.note : HOODED_NOTE;
+          row.podiumDash = row.revealed ? "solid" : "dashed";
+          row.podiumBorder = row.revealed ? row.border : "var(--color-line-strong)";
           return row;
         });
         v.pDraftRows = pRows.filter((r) => Number(r.pickNum) >= 4);
@@ -3063,6 +3072,8 @@ class Component extends DCLogic {
             anim: shown ? "lofgSlam .5s ease-out" : onClock ? "lofgPulse 1.4s ease-in-out infinite" : "none",
             pickColor: first ? "var(--color-accent-200)" : "color-mix(in srgb,var(--color-text) 45%,transparent)",
             nameColor: shown ? "var(--color-text)" : "var(--onair-ink)",
+            // See the phone's copy: the podium reads the state, not a colour.
+            revealed: shown, onClock,
             // Only the podium reads these.
             plinth: "", podiumLabel: "", podiumNote: "", podiumDash: "", podiumOpacity: "", podiumBorder: ""
           };
@@ -3096,14 +3107,15 @@ class Component extends DCLogic {
           // A hooded plinth is a hero element on a TV, so it reads as an empty
           // frame waiting to be filled rather than as the 0.3-opacity ghost
           // the flat grid uses. Dashed while hooded, solid once it lands.
-          row.podiumDash = row.opacity === 1 ? "solid" : "dashed";
-          row.podiumOpacity = row.opacity === 1 ? "1" : "0.85";
+          row.podiumDash = row.revealed ? "solid" : "dashed";
+          row.podiumOpacity = row.revealed ? "1" : "0.85";
           // --color-row-inert is tuned for a dimmed row in a dense grid. On a
           // plinth with three times the area it disappears into the ground.
-          row.podiumBorder = row.opacity === 1 ? row.border : "var(--color-line-strong)";
+          row.podiumBorder = row.revealed ? row.border : "var(--color-line-strong)";
           row.podiumLabel = slot.idx === 0 ? "Pick 1 \u00b7 First overall" : "Pick " + (slot.idx + 1);
           // Hooded picks show the rule of the moment, not a dead dash alone.
-          row.podiumNote = row.name ? slot.note : "Still hooded";
+          // Same expression as the phone's, so neither screen can drift.
+          row.podiumNote = (row.revealed || row.onClock) ? slot.note : HOODED_NOTE;
           // rowFor leaves a hooded name empty, which collapses the plinth to
           // its padding. The podium always needs something on the nameplate.
           if (!row.name) row.name = "\u2014 \u2014 \u2014";
