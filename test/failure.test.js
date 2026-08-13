@@ -332,13 +332,32 @@ check('the travel is a percentage of the bar, never a viewport unit', () => {
   }
 });
 
-check('each mover is a full-width child, so a percentage means the whole bar', () => {
-  // translateX(47%) moves an element by 47% of ITS OWN width. That only equals
-  // 47% of the bar if the mover is exactly as wide as the bar.
+check('each mover takes its width from the bar, so a percentage means the bar', () => {
+  // translateX(47%) moves an element by 47% of ITS OWN width, so the travel
+  // only tracks the bar if the mover's width comes FROM the bar. Two shapes
+  // do that: spanning it outright (width:100%), or anchoring to both edges
+  // (left: + right:), which insets the travel by a fixed amount so the runner
+  // stays inside the clip at 0:00 — see the runner comments in the template.
+  //
+  // This used to demand width:100% literally. That was a proxy for the real
+  // rule, and the real rule is the second assertion: no viewport units in a
+  // mover's own geometry. The bar is narrower than the viewport on every
+  // screen, and vw arithmetic here is exactly what once sent the ball off the
+  // right-hand end of the field.
+  let checked = 0;
   for (const m of template.matchAll(/style="([^"]*transform:translateX\(\{\{ \w+ \}\}\)[^"]*)"/g)) {
-    assert(/width:100%/.test(m[1]),
-      'a percentage mover is not width:100% of the bar, so its travel is scaled wrong:\n           ' + m[1].slice(0, 140));
+    const style = m[1];
+    const spansBar = /width:100%/.test(style);
+    const anchored = /(?:^|;)left:[^;]+/.test(style) && /(?:^|;)right:[^;]+/.test(style);
+    assert(spansBar || anchored,
+      'a percentage mover is neither width:100% nor anchored to both edges, so its travel ' +
+      'is scaled to nothing in particular:\n           ' + style.slice(0, 140));
+    const geometry = (style.match(/(?:^|;)(?:width|left|right):[^;]*/g) || []).join(';');
+    assert(!/\d(?:vw|vh|vmin|vmax)/.test(geometry),
+      'a mover sizes itself in viewport units, so its travel no longer tracks the bar:\n           ' + geometry);
+    checked++;
   }
+  assert(checked >= 3, 'expected at least three movers (host playhead, host runner, phone runner), found ' + checked);
 });
 
 // ── names ───────────────────────────────────────────────────────────────────

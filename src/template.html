@@ -805,7 +805,12 @@ p{letter-spacing:.005em}
              viewport instead, which is wider than this bar on every screen —
              the column is capped at 560px and padded — so the ball also ran
              off the right end into the overflow near zero. -->
-        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform:translateX({{ drivePctStr }});will-change:transform;transition:transform .9s linear">
+        <!-- Inset by half the ball, for the reason spelled out on the host's
+             copy: the svg is 30px wide and hangs 15px left of the line, so on
+             a full-width track exactly half of it sat outside the clip at
+             0:30. On a phone that is not a ball on its own goal line, it is
+             half a ball. -->
+        <div style="position:absolute;top:0;bottom:0;left:15px;right:15px;transform:translateX({{ drivePctStr }});will-change:transform;transition:transform .9s linear">
           <svg sc-camel-view-box="0 0 48 30" width="30" height="19" style="position:absolute;top:50%;left:-15px;margin-top:-9.5px;animation:lofgBob .42s ease-in-out infinite">
             <ellipse cx="24" cy="15" rx="22" ry="13" fill="#6b3a1f" stroke="var(--color-accent-100)" stroke-width="2.5"></ellipse>
             <path d="M7 15h8M33 15h8M18 15h12M20 10.5v9M24 10.5v9M28 10.5v9" stroke="var(--color-accent-100)" stroke-width="2.5" stroke-linecap="round"></path>
@@ -1138,13 +1143,27 @@ p{letter-spacing:.005em}
              at both ends.
 
              Both wrappers ride driveFrac's twin so the runner and the line of
-             scrimmage stay welded together. The ball is centred on that line,
-             which is why it sits half inside an end zone at each end of the
-             play: its own goal line at 0:30, and breaking the plane at 0:00. -->
-        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform:translateX({{ drivePctStr }});will-change:transform;transition:transform .9s linear">
+             scrimmage stay welded together — same inset on both, or the ball
+             stops sitting on its own line.
+
+             The inset is what keeps the ball whole. The runner is centred on
+             the line of scrimmage inside a bar that clips, so travelling the
+             full 0-100% put half a football outside the frame at each end: at
+             0:30 that read as a rendering fault, and once the drive actually
+             reached 0:00 the ball would have vanished off the right edge
+             entirely. Inset by a bit more than half the widest ball, the
+             runner is whole at both ends and still crosses the goal line at
+             94% with room to spare.
+
+             46px is half the runner GROUP, not half the ball: the streaks and
+             the ball sit in one flex row centred on the line, so the ball's
+             far edge is 44.5px out at full size, not 28px. Fixed pixels and
+             not a vw clamp, so the travel stays a fraction of the bar — the
+             viewport is what sent this ball off the end once already. -->
+        <div style="position:absolute;top:0;bottom:0;left:46px;right:46px;transform:translateX({{ drivePctStr }});will-change:transform;transition:transform .9s linear">
           <div style="position:absolute;top:0;bottom:0;left:0;width:2px;background:{{ clockColor }};box-shadow:0 0 16px {{ clockGlow }}"></div>
         </div>
-        <div style="position:absolute;top:0;bottom:0;left:0;width:100%;transform:translateX({{ drivePctStr }});will-change:transform;transition:transform .9s linear">
+        <div style="position:absolute;top:0;bottom:0;left:46px;right:46px;transform:translateX({{ drivePctStr }});will-change:transform;transition:transform .9s linear">
         <div style="position:absolute;top:50%;left:0;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px">
           <span style="display:flex;gap:4px;opacity:.55">
             <span style="width:14px;height:2px;border-radius:1px;background:{{ clockColor }};animation:lofgLegs .32s ease-in-out infinite"></span>
@@ -1300,6 +1319,20 @@ p{letter-spacing:.005em}
 const SB_URL = "https://qbzsinhlzuxdjvwfurxe.supabase.co";
 const SB_KEY = "sb_publishable_qMEuvB-ugPpbf26vZYCrhg_-AY6hull";
 const QUESTION_SECONDS = 30;
+// How long 0:00 stays on screen before the results cut in.
+//
+// The bar's movers carry `transition: transform .9s linear`, so the last tick
+// does not arrive instantly — it animates. Ending the question in the same
+// task that set secondsLeft to 0 unmounted the question screen mid-transition:
+// driveFrac never rendered above .967, the ball stopped about three yards out
+// and the field never finished painting. The one frame the whole thirty
+// seconds is built towards was the one frame nobody ever saw.
+//
+// This MUST stay >= the transition duration in those five inline styles. It is
+// the whistle beat: the clock reads 0:00, the ball breaks the plane, then the
+// call. A whistle blown early skips it, which is correct — that drive was cut
+// short on purpose.
+const DRIVE_LAND_MS = 900;
 const QUESTIONS_PER_TIER = 3;
 // I and O are held out so a code cannot be misread as 1 or 0 across a lit
 // room. The mint and the join filter both read from here now; they used to
@@ -2169,7 +2202,14 @@ class Component extends DCLogic {
       this.tick = setInterval(() => {
         const left = Math.max(0, QUESTION_SECONDS - Math.round((Date.now() - this.qStart) / 1000));
         this.setState({ secondsLeft: left }, this.broadcast);
-        if (left <= 0) this.endQuestion();
+        if (left <= 0) {
+          // Stop the clock and the bots first, so nothing lands during the
+          // hold and gets scored at a time past the end of the play. Then let
+          // the 0:00 frame — already broadcast above, so twelve phones are
+          // running the same beat — finish before the results take the screen.
+          this.stopClock(); this.clearDemo();
+          this.planeHold = setTimeout(this.endQuestion, DRIVE_LAND_MS);
+        }
       }, 1000);
       this.scheduleDemo(i);
     });
@@ -2189,6 +2229,10 @@ class Component extends DCLogic {
   clearDemo() { (this.demoTimers || []).forEach(clearTimeout); this.demoTimers = []; }
   stopClock() {
     if (this.tick) { clearInterval(this.tick); this.tick = null; }
+    // A whistle blown during the landing beat, or an Exit, has to cancel it —
+    // otherwise endQuestion fires a second time a beat later, into whatever
+    // screen replaced this one.
+    if (this.planeHold) { clearTimeout(this.planeHold); this.planeHold = null; }
     if (this.revealTimer) { clearInterval(this.revealTimer); this.revealTimer = null; }
     if (this.revealHold) { clearTimeout(this.revealHold); this.revealHold = null; }
     if (this.introTimer) { clearTimeout(this.introTimer); this.introTimer = null; }
