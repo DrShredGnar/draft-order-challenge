@@ -2944,7 +2944,10 @@ class Component extends DCLogic {
         // nothing to put at the top of the type scale, so the board gets it.
         v.myPickRevealed = !!revealedMine;
         v.myPickPending = !revealedMine;
-        v.myPickLabel = revealedMine ? "Pick " + me2.rank : "\u2014";
+        // Ordinal like the podium labels, for every seat \u2014 "7th Pick" is how
+        // the slot is said at a draft, and one card cannot speak two
+        // languages depending on who is holding it.
+        v.myPickLabel = revealedMine ? ordinal(me2.rank) + " Pick" : "\u2014";
         // A top-three finish wears its metal on the number itself \u2014 the one
         // element on this screen that is unmistakably yours. Everyone else
         // keeps the plain ink; fourth is not a medal.
@@ -3022,7 +3025,10 @@ class Component extends DCLogic {
           const row = byPick(slot.pick);
           row.plinth = slot.plinth;
           row.col = String(slot.col);
-          row.podiumLabel = "Pick " + slot.pick;
+          // Same ordinals as the TV podium, shortened for a 390px screen: the
+          // phone's centre plinth has no room for "Overall" and the raised
+          // middle position already says it.
+          row.podiumLabel = ordinal(slot.pick) + " Pick";
           row.podiumNote = (row.revealed || row.onClock) ? slot.note : HOODED_NOTE;
           row.podiumDash = row.revealed ? "solid" : "dashed";
           row.podiumBorder = row.revealed ? row.border : "var(--color-line-strong)";
@@ -3277,7 +3283,12 @@ class Component extends DCLogic {
             row.pickColor = medal;
             row.bg = "color-mix(in srgb," + medal + " 14%,transparent)";
           }
-          row.podiumLabel = slot.idx === 0 ? "Pick 1 \u00b7 First overall" : "Pick " + (slot.idx + 1);
+          // Ordinals, because that is how a draft slot is actually said out
+          // loud \u2014 nobody at a draft has ever announced "Pick 2". The winner's
+          // label used to be "Pick 1 \u00b7 First overall"; as an ordinal the
+          // suffix would just say first twice, so the NFL's own phrase
+          // absorbs it.
+          row.podiumLabel = slot.idx === 0 ? "1st Overall Pick" : ordinal(slot.idx + 1) + " Pick";
           // Hooded picks show the rule of the moment, not a dead dash alone.
           // Same expression as the phone's, so neither screen can drift.
           row.podiumNote = (row.revealed || row.onClock) ? slot.note : HOODED_NOTE;
