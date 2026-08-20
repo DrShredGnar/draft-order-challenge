@@ -3246,7 +3246,12 @@ class Component extends DCLogic {
           // bigger type — the label reads "Pick 1 · First overall" and the
           // name is the largest thing on the television. A line under it could
           // only repeat one of them.
-          { idx: 0, col: 2, plinth: "clamp(26px,5.4vh,58px)", note: "" },
+          //
+          // The winner's plinth is nearly double second's step over third,
+          // not another even stair. At 5.4vh the caps bound a 1080p TV to a
+          // 34px gap between first and second — the two read as neighbours,
+          // and first place is not a neighbourhood.
+          { idx: 0, col: 2, plinth: "clamp(38px,8vh,86px)", note: "" },
           { idx: 2, col: 3, plinth: "0px", note: "Third off the board." }
         ];
         v.podiumRows = PODIUM.filter((slot) => order[slot.idx]).map((slot) => {
