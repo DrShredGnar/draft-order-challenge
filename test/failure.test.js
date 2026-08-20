@@ -355,6 +355,26 @@ check('the kickoff read is opt-in, lazy, and cut when the intro ends', () => {
     'nothing stops the kickoff read from talking over question one');
 });
 
+// Started from the top, any tap after the first instant played a read that
+// outlived the intro and died mid-word at question one — jarring, and shipped
+// that way for exactly one day. Radio, not tape: the tap must seek to where
+// the TV's copy is now, so the read ends on its own beat.
+check('a late tap joins the kickoff read in progress instead of starting over', () => {
+  const src = lift(/^  playKickoff = \(\) => \{[\s\S]*?\n  \};$/m, 'playKickoff()');
+  assert(/introHeardAt/.test(src) && /\/\s*1000/.test(src),
+    'playKickoff starts from the top; a late tap will be cut mid-word at question one');
+  // The seek is dead weight unless something stamps the intro's start — the
+  // first snapshot that says "intro", and only the first, because every
+  // mid-intro join re-broadcasts the same phase.
+  const snap = lift(/if \(m\.t === "state"\) \{[\s\S]*?\n      \}/, 'the snapshot handler');
+  assert(/if \(!this\.introHeardAt\) this\.introHeardAt = Date\.now\(\)/.test(snap),
+    'nothing stamps when the intro began, or the stamp slides on every re-broadcast');
+  // Seek before the file's duration is known and the browser discards it —
+  // and on the first tap the file is only just being fetched.
+  assert(/loadedmetadata/.test(src) && /readyState/.test(src),
+    'the seek does not wait for metadata; the first tap of the night starts from the top anyway');
+});
+
 // ── the running ball ────────────────────────────────────────────────────────
 console.log('\nthe ball crossing the bar');
 

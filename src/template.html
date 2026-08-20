@@ -1905,10 +1905,21 @@ class Component extends DCLogic {
         // now moot, and the ping loop has done its job.
         if (this.pingTimer) { clearInterval(this.pingTimer); this.pingTimer = null; }
         const next = { snap: m.s, link: "live", joinSearch: "found" };
+        // The snapshot that flips the phone to "Eyes up." is the intro's
+        // starting gun, and playKickoff seeks off this stamp so a late tap
+        // joins the read in progress instead of starting it over. Guarded,
+        // because every mid-intro join re-broadcasts the same phase and the
+        // stamp must mark the first one, not the latest.
+        if (m.s && m.s.phase === "intro") {
+          if (!this.introHeardAt) this.introHeardAt = Date.now();
+        } else this.introHeardAt = null;
         // The kickoff read must not talk over question one — the TV cuts its
         // own copy in skipIntro for the same reason. The phone's only clock
         // for the intro is the snapshot, so the moment it says the intro is
-        // over, the read stops mid-word, exactly like the room's did.
+        // over, the read stops, exactly like the room's did. With the seek
+        // above this only fires when the commissioner skips the intro or the
+        // phone joined it late; a tap during a full-length intro ends on its
+        // own, before the question snapshot arrives.
         if (this.state.kickoffOn && m.s && m.s.phase !== "intro") {
           this.stopKickoff();
           next.kickoffOn = false;
@@ -1931,6 +1942,7 @@ class Component extends DCLogic {
     if (this.pingTimer) { clearInterval(this.pingTimer); this.pingTimer = null; }
     if (this.joinGiveUp) { clearTimeout(this.joinGiveUp); this.joinGiveUp = null; }
     this.answeredFor = null;
+    this.introHeardAt = null;
     if (this.ch) { this.ch.unsubscribe(); this.ch = null; }
     this.setState({ screen: "home", phase: "lobby", players: [], answers: {}, questions: [], qIndex: 0, revealCount: 0, snap: null, commishId: "", exitArmed: false, joinSearch: "", link: "", voOn: false, kickoffOn: false, startArmed: false, shared: "" });
   };
@@ -2459,9 +2471,16 @@ class Component extends DCLogic {
   // until asked, its own Audio object so it can never fight the reveal read
   // over a shared currentTime.
   //
-  // It starts from the top rather than seeking to the TV's position: the
-  // snapshot carries no clock for the intro, and a remote player taps this
-  // when "Eyes up." appears, which is when the TV started the read.
+  // Radio, not tape: the read is a live broadcast the room is already
+  // hearing, so a tap seeks to where the TV's copy is now — measured from
+  // the snapshot that started the intro — and joins it in progress. Started
+  // from the top instead, any tap after the first instant played a read that
+  // outlived the intro and died mid-word at question one; missing the first
+  // seconds is the radio's deal, and it beats hearing them and losing the
+  // ending. The seek waits for loadedmetadata because on the first tap the
+  // file does not exist yet, and currentTime set before the duration is
+  // known is discarded. The offset is computed inside the cue, not at the
+  // tap, so the fetch time it takes to get there does not fall out of sync.
   playKickoff = () => {
     if (this.playerIntroVo && !this.playerIntroVo.paused) {
       try { this.playerIntroVo.pause(); this.playerIntroVo.currentTime = 0; } catch (e) {}
@@ -2478,7 +2497,14 @@ class Component extends DCLogic {
       } catch (e) { this.playerIntroVo = null; return; }
     }
     try {
-      this.playerIntroVo.currentTime = 0;
+      const cue = () => {
+        try {
+          this.playerIntroVo.currentTime =
+            this.introHeardAt ? (Date.now() - this.introHeardAt) / 1000 : 0;
+        } catch (e) {}
+      };
+      if (this.playerIntroVo.readyState >= 1) cue();
+      else this.playerIntroVo.addEventListener("loadedmetadata", cue, { once: true });
       const r = this.playerIntroVo.play();
       if (r && r.catch) r.catch(() => this.setState({ kickoffOn: false }));
       this.setState({ kickoffOn: true });
