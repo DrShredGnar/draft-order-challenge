@@ -332,6 +332,29 @@ check('the reveal read is opt-in and costs nothing until it is tapped', () => {
   assert(armed && !/playerVo/.test(armed[0]), 'the phone read is being armed alongside the host read');
 });
 
+// Same rules for the kickoff read: the cold open plays its voice-over on the
+// TV only, and a remote player heard nothing while their phone said "Eyes
+// up." at them. The fix is the reveal read's shape, and this pins the three
+// properties that make it safe — opt-in, lazy, and cut when the intro ends.
+check('the kickoff read is opt-in, lazy, and cut when the intro ends', () => {
+  const src = lift(/^  playKickoff = \(\) => \{[\s\S]*?\n  \};$/m, 'playKickoff()');
+  assert(/new Audio\("kickoff-vo\.mp3"\)/.test(src), 'playKickoff does not load the kickoff read');
+  assert(/if \(!this\.playerIntroVo\)/.test(src),
+    'the audio object is created eagerly; a phone that never taps would fetch the file anyway');
+  // Its own Audio object, not the reveal read's, or a tap on one call would
+  // scrub and restart the other.
+  assert(!/this\.playerVo\b/.test(src), 'the kickoff read shares the reveal read audio object');
+  // The host arms its read at goHost. The phone must not.
+  const armed = template.match(/armIntroVo\(\)\s*\{[\s\S]*?\n  \}/);
+  assert(armed && !/playerIntroVo/.test(armed[0]), 'the phone kickoff read is being armed alongside the host read');
+  // A 13.5s read tapped mid-intro outlives the intro. The TV cuts its own
+  // copy in skipIntro; the phone's only clock is the snapshot, so the cut has
+  // to live where the snapshot lands.
+  const snap = lift(/if \(m\.t === "state"\) \{[\s\S]*?\n      \}/, 'the snapshot handler');
+  assert(/kickoffOn && m\.s && m\.s\.phase !== "intro"/.test(snap) && /stopKickoff\(\)/.test(snap),
+    'nothing stops the kickoff read from talking over question one');
+});
+
 // ── the running ball ────────────────────────────────────────────────────────
 console.log('\nthe ball crossing the bar');
 

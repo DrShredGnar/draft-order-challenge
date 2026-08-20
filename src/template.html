@@ -771,6 +771,13 @@ p{letter-spacing:.005em}
       <sc-if value="{{ pWaitRules }}">
       <div style="margin-top:2px;font-size:12.5px;line-height:1.6;max-width:32ch;color:var(--color-muted)">{{ pWaitRules }}</div>
       </sc-if>
+      <!-- Opt-in, same as the reveal read on the final board: the kickoff
+           read plays on the TV, and a remote player can hear neither. Twelve
+           phones unmuting in one room would be bedlam, so it is a button and
+           not a policy, and nothing is fetched until it is tapped. -->
+      <sc-if value="{{ pWaitKickoff }}">
+      <button sc-camel-on-click="{{ playKickoff }}" style="margin-top:4px;flex:none;cursor:pointer;min-height:44px;padding:0 14px;border-radius:var(--radius-md);border:1px solid {{ kickoffBorder }};background:transparent;color:{{ kickoffColor }};font:italic 700 12px/1 var(--font-heading);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap">{{ kickoffLabel }}</button>
+      </sc-if>
       <sc-if value="{{ pWaitRetry }}">
       <button sc-camel-on-click="{{ goJoin }}" style="margin-top:4px;cursor:pointer;min-height:52px;padding:0 24px;border-radius:var(--radius-md);border:1px solid var(--color-penalty);background:transparent;color:var(--color-penalty);font-family:var(--font-heading);font-size:21px;font-weight:800;text-transform:uppercase;letter-spacing:.04em">Check the code</button>
       </sc-if>
@@ -1720,7 +1727,7 @@ class Component extends DCLogic {
     // exitArmed: the host Exit button's two-step confirm.
     // resume: a host session recovered from localStorage, offered on home.
     link: "", joinSearch: "", exitArmed: false, resume: null, voOn: false,
-    startArmed: false, shared: "",
+    kickoffOn: false, startArmed: false, shared: "",
     snap: null
   };
 
@@ -1841,6 +1848,7 @@ class Component extends DCLogic {
     if (this.shareTimer) { clearTimeout(this.shareTimer); this.shareTimer = null; }
     if (this.startTimer) { clearTimeout(this.startTimer); this.startTimer = null; }
     this.stopPlayCall();
+    this.stopKickoff();
     if (this.ch) this.ch.unsubscribe();
   }
 
@@ -1896,7 +1904,16 @@ class Component extends DCLogic {
         // The room was found. Whatever the join screen was worrying about is
         // now moot, and the ping loop has done its job.
         if (this.pingTimer) { clearInterval(this.pingTimer); this.pingTimer = null; }
-        this.setState({ snap: m.s, link: "live", joinSearch: "found" });
+        const next = { snap: m.s, link: "live", joinSearch: "found" };
+        // The kickoff read must not talk over question one — the TV cuts its
+        // own copy in skipIntro for the same reason. The phone's only clock
+        // for the intro is the snapshot, so the moment it says the intro is
+        // over, the read stops mid-word, exactly like the room's did.
+        if (this.state.kickoffOn && m.s && m.s.phase !== "intro") {
+          this.stopKickoff();
+          next.kickoffOn = false;
+        }
+        this.setState(next);
       }
       if (m.t === "ping") this.send({ t: "hello", id: this.state.myId, name: this.state.myName, b: BUILD_ID });
       // The room exists, it is just out of seats. Distinct from "no room".
@@ -1910,12 +1927,12 @@ class Component extends DCLogic {
 
   // ---- navigation ----
   goHome = () => {
-    this.stopClock(); this.clearDemo(); this.stopIntroVo(); this.stopRevealVo(); this.stopPlayCall();
+    this.stopClock(); this.clearDemo(); this.stopIntroVo(); this.stopRevealVo(); this.stopPlayCall(); this.stopKickoff();
     if (this.pingTimer) { clearInterval(this.pingTimer); this.pingTimer = null; }
     if (this.joinGiveUp) { clearTimeout(this.joinGiveUp); this.joinGiveUp = null; }
     this.answeredFor = null;
     if (this.ch) { this.ch.unsubscribe(); this.ch = null; }
-    this.setState({ screen: "home", phase: "lobby", players: [], answers: {}, questions: [], qIndex: 0, revealCount: 0, snap: null, commishId: "", exitArmed: false, joinSearch: "", link: "", voOn: false, startArmed: false, shared: "" });
+    this.setState({ screen: "home", phase: "lobby", players: [], answers: {}, questions: [], qIndex: 0, revealCount: 0, snap: null, commishId: "", exitArmed: false, joinSearch: "", link: "", voOn: false, kickoffOn: false, startArmed: false, shared: "" });
   };
 
   // ── Exit ─────────────────────────────────────────────────────────────────
@@ -2435,6 +2452,43 @@ class Component extends DCLogic {
     else done("copied");
   };
 
+  // ── The kickoff read, on a phone ─────────────────────────────────────────
+  // Same shape as the reveal read below, for the same person: whoever is
+  // remote can neither see nor hear the TV's cold open, and until now the
+  // phone just said "Eyes up." at a wall. Opt-in per tap, nothing fetched
+  // until asked, its own Audio object so it can never fight the reveal read
+  // over a shared currentTime.
+  //
+  // It starts from the top rather than seeking to the TV's position: the
+  // snapshot carries no clock for the intro, and a remote player taps this
+  // when "Eyes up." appears, which is when the TV started the read.
+  playKickoff = () => {
+    if (this.playerIntroVo && !this.playerIntroVo.paused) {
+      try { this.playerIntroVo.pause(); this.playerIntroVo.currentTime = 0; } catch (e) {}
+      return this.setState({ kickoffOn: false });
+    }
+    if (!this.playerIntroVo) {
+      try {
+        this.playerIntroVo = new Audio("kickoff-vo.mp3");
+        this.playerIntroVo.preload = "auto";
+        this.playerIntroVo.addEventListener("ended", () => this.setState({ kickoffOn: false }));
+        // A 404 on the sibling file is not worth an error state; the game
+        // carries on and the button simply reads Play again.
+        this.playerIntroVo.addEventListener("error", () => this.setState({ kickoffOn: false }));
+      } catch (e) { this.playerIntroVo = null; return; }
+    }
+    try {
+      this.playerIntroVo.currentTime = 0;
+      const r = this.playerIntroVo.play();
+      if (r && r.catch) r.catch(() => this.setState({ kickoffOn: false }));
+      this.setState({ kickoffOn: true });
+    } catch (e) { this.setState({ kickoffOn: false }); }
+  };
+  stopKickoff() {
+    if (!this.playerIntroVo) return;
+    try { this.playerIntroVo.pause(); this.playerIntroVo.currentTime = 0; } catch (e) {}
+  }
+
   // ── The reveal read, on a phone ──────────────────────────────────────────
   // Host-only until now, because twelve phones unmuting in one room is worse
   // than silence. Playing remotely is the case that needs it, so it is a
@@ -2605,9 +2659,15 @@ class Component extends DCLogic {
         v.pWaitTitleColor = "var(--color-text)";
         v.pWaitRules = "";
         v.pWaitRetry = false;
+        v.pWaitKickoff = false;
         if (s && phase === "intro") {
           v.pWaitTitle = "Eyes up.";
           v.pWaitBody = "Kickoff is on the big screen. First question lands in a second.";
+          v.pWaitKickoff = true;
+          v.playKickoff = this.playKickoff;
+          v.kickoffLabel = st.kickoffOn ? "Stop" : "Hear the kickoff";
+          v.kickoffBorder = st.kickoffOn ? "var(--color-accent)" : "var(--color-line-strong)";
+          v.kickoffColor = st.kickoffOn ? "var(--color-accent-200)" : "var(--color-muted)";
         } else if (s) {
           v.pWaitTitle = "You're on the roster.";
           v.pWaitBody = `${s.playerCount} on the roster. Kickoff when the commissioner says go.`;
