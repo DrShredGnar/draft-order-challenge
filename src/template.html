@@ -1371,8 +1371,11 @@ const CODE_REJECT_RE = /[^ABCDEFGHJKLMNPQRSTUVWXYZ]/g;
 // Long enough to cover a host still booting on a bad hotspot, short enough
 // that nobody stands in a loud room reading an ellipsis.
 const JOIN_GIVEUP_MS = 6000;
-// How long a tapped answer stays changeable before it locks.
-const CHANGE_MS = 2000;
+// How long a tapped answer stays changeable before it locks, counted from
+// the latest tap. Five seconds is a change of heart, not a second opinion
+// shopped around the room — and the question closing early still beats it,
+// because a room where everyone has answered is not waiting on a maybe.
+const CHANGE_MS = 5000;
 // Twelve seats. addDemo already respected this; real joins did not, so a
 // thirteenth phone joined silently and the lobby offered "-1 more can join".
 const MAX_PLAYERS = 12;
@@ -2288,11 +2291,20 @@ class Component extends DCLogic {
     if (!this.state.players.some((p) => p.id === id)) return;
     const answers = Object.assign({}, this.state.answers);
     const row = Object.assign({}, answers[qIndex] || {});
-    if (row[id]) return;
+    // A second card from the same phone is a change of heart, not a
+    // duplicate. The phone has said "Tap again to change it" since the
+    // change window shipped, and this line used to be `if (row[id]) return`
+    // — so the phone showed the new pick while the host quietly scored the
+    // old one. The stamp is when THIS card arrived: a change pays its own
+    // seconds in the tiebreak, which is what keeps it honest.
+    const isNew = !row[id];
     row[id] = { opt, ms: Date.now() - this.qStart, at: new Date().toISOString() };
     answers[qIndex] = row;
     this.setState({ answers }, () => {
       this.broadcast();
+      // Only a fresh card can complete the set; a change never re-arms the
+      // early whistle.
+      if (!isNew) return;
       const active = this.state.players.length;
       if (active && Object.keys(row).length >= active) setTimeout(() => { if (this.state.phase === "question") this.endQuestion(); }, 700);
     });
@@ -2401,10 +2413,12 @@ class Component extends DCLogic {
   // landed, so a dropped packet and a successful answer looked identical
   // while permanently costing a draft slot.
   //
-  // Now a tap opens a window instead of closing one. For CHANGE_MS the pick
-  // is provisional and re-tappable; after that it locks. The lock is still
-  // local — the host is the authority and rejects duplicates — but the phone
-  // no longer claims the answer arrived until answeredIds says it did.
+  // Now a tap opens a window instead of closing one. For CHANGE_MS (from the
+  // latest tap) the pick is provisional and re-tappable; after that it
+  // locks. The host honours every card sent while the question is open and
+  // scores the last one, so the window's edge is this local lock plus the
+  // question closing — and the phone still does not claim the answer arrived
+  // until answeredIds says it did.
   answer(k) {
     const s = this.state.snap; if (!s || s.phase !== "question") return;
     if (this.answeredFor === s.qIndex) return;              // already locked

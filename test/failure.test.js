@@ -375,6 +375,59 @@ check('a late tap joins the kickoff read in progress instead of starting over', 
     'the seek does not wait for metadata; the first tap of the night starts from the top anyway');
 });
 
+// ── the changed answer ──────────────────────────────────────────────────────
+console.log('\nthe changed answer');
+
+// The phone has said "Tap again to change it." since the change window
+// shipped, and the host answered every second card with `if (row[id]) return`
+// — the phone showed the new pick, the host scored the old one, and nothing
+// on either screen ever disagreed out loud. These run the shipped hostAnswer
+// against a stub host and read back what was actually scored.
+const hostAnswerSrc = lift(/^  hostAnswer\(id, qIndex, opt\) \{[\s\S]*?\n  \}$/m, 'hostAnswer()');
+function hostStub(phase) {
+  return {
+    state: { phase: phase || 'question', qIndex: 0, players: [{ id: 'p0' }, { id: 'p1' }], answers: {} },
+    qStart: Date.now() - 1000,
+    setState(patch, cb) { Object.assign(this.state, patch); if (cb) cb.call(this); },
+    broadcast() {}, endQuestion() {}
+  };
+}
+const hostAnswer = new Function('self_', 'id', 'qIndex', 'opt',
+  hostAnswerSrc.replace(/^  hostAnswer\(id, qIndex, opt\) \{/, '').replace(/\n  \}$/, '').replace(/this\./g, 'self_.'));
+
+check('a changed answer replaces the first one instead of being dropped', () => {
+  const host = hostStub();
+  hostAnswer(host, 'p0', 0, 1);
+  hostAnswer(host, 'p0', 0, 3);
+  assert(host.state.answers[0].p0.opt === 3,
+    'the host scored the first tap and threw the change away — the bug the phone has been promising away');
+});
+
+check('a change re-stamps the clock, so it pays its own seconds in the tiebreak', () => {
+  const host = hostStub();
+  hostAnswer(host, 'p0', 0, 1);
+  const first = host.state.answers[0].p0.ms;
+  host.qStart -= 400;                       // 400ms pass, without sleeping in a test
+  hostAnswer(host, 'p0', 0, 3);
+  assert(host.state.answers[0].p0.ms >= first + 400,
+    'the change kept the original timestamp; late second thoughts ride the first tap’s clock');
+});
+
+check('the window ends when the question does', () => {
+  const host = hostStub();
+  hostAnswer(host, 'p0', 0, 1);
+  host.state.phase = 'results';
+  hostAnswer(host, 'p0', 0, 3);
+  assert(host.state.answers[0].p0.opt === 1,
+    'a card sent after the whistle still changed the answer');
+});
+
+check('the phone offers the five-second window the rule promises', () => {
+  const { CHANGE_MS } = new Function(
+    lift(/const CHANGE_MS = \d+;/, 'CHANGE_MS') + 'return { CHANGE_MS };')();
+  assert(CHANGE_MS === 5000, 'CHANGE_MS is ' + CHANGE_MS + ', not the 5s the rule promises');
+});
+
 // ── the running ball ────────────────────────────────────────────────────────
 console.log('\nthe ball crossing the bar');
 
