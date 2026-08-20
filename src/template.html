@@ -167,6 +167,16 @@
   --tier-hard-ink:#d4702e;
   --tier-brutal-ink:#ee6248;
 
+  /* — medal metals. The top three picks on the draft board, and nothing
+       else: the podium already gives them height, these give them the
+       colours a podium is expected to wear. Measured like the tier inks,
+       on --color-panel2, the lightest ground they touch:
+         gold 7.57 · silver 8.83 · bronze 5.06 — all clear 4.5:1 as text,
+       so base and ink collapse to one token each. — */
+  --medal-gold:#d4af37;
+  --medal-silver:#b8c2cf;
+  --medal-bronze:#cd7f32;
+
   /* — typography — */
   --font-heading:"Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
   --font-body:"JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
@@ -949,7 +959,7 @@ p{letter-spacing:.005em}
       <sc-if value="{{ myPickRevealed }}">
       <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center">
         <div style="font:italic 700 13px/1 var(--font-heading);letter-spacing:.2em;text-transform:uppercase;color:var(--color-accent-400)">Your pick</div>
-        <div style="font-family:var(--font-heading);font-size:clamp(56px,15vw,88px);font-weight:800;line-height:.92;letter-spacing:.005em;animation:lofgSlam .5s ease-out">{{ myPickLabel }}</div>
+        <div style="font-family:var(--font-heading);font-size:clamp(56px,15vw,88px);font-weight:800;line-height:.92;letter-spacing:.005em;color:{{ myPickColor }};animation:lofgSlam .5s ease-out">{{ myPickLabel }}</div>
         <div style="font-size:13px;line-height:1.45;color:var(--color-muted-strong);max-width:34ch;text-wrap:pretty">{{ myFinalNote }}</div>
         <!-- Worst-to-first means last place is announced first, alone, with
              eleven people watching. It is a snake draft, so pick 12 is also
@@ -1356,6 +1366,12 @@ const DRIVE_LAND_MS = 900;
 // "Still hooded" was jargon nobody outside this file used — a plinth that has
 // not been filled in yet needs to say so in words, not in a metaphor.
 const HOODED_NOTE = "Still to come";
+// Gold, silver, bronze — indexed by finishing position, worn only once a
+// pick is revealed. A hooded plinth showing its metal would call the finish
+// before the name lands, and the reveal is the whole show. One list read by
+// the TV podium, the phone podium, and the phone's own pick card, so the
+// three screens cannot drift to three golds.
+const MEDAL_METALS = ["var(--medal-gold)", "var(--medal-silver)", "var(--medal-bronze)"];
 const QUESTIONS_PER_TIER = 3;
 // I and O are held out so a code cannot be misread as 1 or 0 across a lit
 // room. The mint and the join filter both read from here now; they used to
@@ -2929,6 +2945,11 @@ class Component extends DCLogic {
         v.myPickRevealed = !!revealedMine;
         v.myPickPending = !revealedMine;
         v.myPickLabel = revealedMine ? "Pick " + me2.rank : "\u2014";
+        // A top-three finish wears its metal on the number itself \u2014 the one
+        // element on this screen that is unmistakably yours. Everyone else
+        // keeps the plain ink; fourth is not a medal.
+        v.myPickColor = revealedMine && me2.rank <= 3
+          ? MEDAL_METALS[me2.rank - 1] : "var(--color-text)";
         // "Watch the big screen" is the wrong instruction for anyone who is
         // not in the room, and they are exactly the people staring at this.
         // The pending line carries the whole message now, so it reads as one
@@ -3005,6 +3026,13 @@ class Component extends DCLogic {
           row.podiumNote = (row.revealed || row.onClock) ? slot.note : HOODED_NOTE;
           row.podiumDash = row.revealed ? "solid" : "dashed";
           row.podiumBorder = row.revealed ? row.border : "var(--color-line-strong)";
+          // Same metals, same moment as the TV: with the name, never before.
+          if (row.revealed) {
+            const medal = MEDAL_METALS[slot.pick - 1];
+            row.podiumBorder = medal;
+            row.pickColor = medal;
+            row.bg = "color-mix(in srgb," + medal + " 14%,transparent)";
+          }
           return row;
         });
         v.pDraftRows = pRows.filter((r) => Number(r.pickNum) >= 4);
@@ -3233,6 +3261,17 @@ class Component extends DCLogic {
           // --color-row-inert is tuned for a dimmed row in a dense grid. On a
           // plinth with three times the area it disappears into the ground.
           row.podiumBorder = row.revealed ? row.border : "var(--color-line-strong)";
+          // The metal lands with the name, never before it — a gold border on
+          // a hooded plinth calls the finish while the read is still selling
+          // it. Height already separates the three; this is the colour a
+          // podium is expected to wear, and it stops at the border, label and
+          // a tint of ground so the name stays the loudest thing on the card.
+          if (row.revealed) {
+            const medal = MEDAL_METALS[slot.idx];
+            row.podiumBorder = medal;
+            row.pickColor = medal;
+            row.bg = "color-mix(in srgb," + medal + " 14%,transparent)";
+          }
           row.podiumLabel = slot.idx === 0 ? "Pick 1 \u00b7 First overall" : "Pick " + (slot.idx + 1);
           // Hooded picks show the rule of the moment, not a dead dash alone.
           // Same expression as the phone's, so neither screen can drift.

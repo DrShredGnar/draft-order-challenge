@@ -217,12 +217,14 @@ const ordinal = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return
 // would be a third version of the string waiting to disagree with the other two.
 const { HOODED_NOTE } = new Function(
   lift(/const HOODED_NOTE = "[^"]*";/, 'HOODED_NOTE') + 'return { HOODED_NOTE };')();
+const { MEDAL_METALS } = new Function(
+  lift(/const MEDAL_METALS = \[[^\]]*\];/, 'MEDAL_METALS') + 'return { MEDAL_METALS };')();
 
 function pFinal(revealed, myId, n) {
   const roster = n ? BOARD.slice(0, n) : BOARD;
   const v = {}, st = { myId, voOn: false };
-  new Function('v', 'st', 's', 'pts', 'ordinal', 'SNAKE_DRAFT', 'HOODED_NOTE', 'self_',
-    pFinalBody.replace(/this\./g, 'self_.'))(v, st, { board: roster, draftTotal: roster.length, revealed }, pts, ordinal, true, HOODED_NOTE, { playCall() {} });
+  new Function('v', 'st', 's', 'pts', 'ordinal', 'SNAKE_DRAFT', 'HOODED_NOTE', 'MEDAL_METALS', 'self_',
+    pFinalBody.replace(/this\./g, 'self_.'))(v, st, { board: roster, draftTotal: roster.length, revealed }, pts, ordinal, true, HOODED_NOTE, MEDAL_METALS, { playCall() {} });
   return v;
 }
 
@@ -373,6 +375,38 @@ check('a late tap joins the kickoff read in progress instead of starting over', 
   // and on the first tap the file is only just being fetched.
   assert(/loadedmetadata/.test(src) && /readyState/.test(src),
     'the seek does not wait for metadata; the first tap of the night starts from the top anyway');
+});
+
+// ── the medals ──────────────────────────────────────────────────────────────
+console.log('\nthe medals');
+
+// Gold, silver, bronze land on the podium — but only WITH the name. The
+// reveal runs worst to first, so a hooded plinth already wearing its metal
+// would call the finish while the read is still selling it. Both halves are
+// the contract: the colour must arrive, and it must not arrive early.
+check('the podium wears its metals once the picks are revealed', () => {
+  const rows = pFinal(12, 'p0').pPodiumRows;
+  const byPick = (n) => rows.find((r) => Number(r.pickNum) === n);
+  assert(byPick(1).pickColor === MEDAL_METALS[0], 'first is not wearing gold');
+  assert(byPick(2).pickColor === MEDAL_METALS[1], 'second is not wearing silver');
+  assert(byPick(3).pickColor === MEDAL_METALS[2], 'third is not wearing bronze');
+  assert(byPick(1).podiumBorder === MEDAL_METALS[0], 'the gold stops at the label; the border still reads accent');
+});
+
+check('a hooded plinth shows no metal — the colour would spoil the reveal', () => {
+  for (const revealed of [0, 6]) {
+    for (const r of pFinal(revealed, 'p0').pPodiumRows) {
+      assert(!MEDAL_METALS.includes(r.pickColor) && !MEDAL_METALS.includes(r.podiumBorder),
+        'a hooded plinth is wearing its metal (revealed=' + revealed + ', ' + r.podiumLabel + ')');
+    }
+  }
+});
+
+check("your own pick number carries your metal, and only for the top three", () => {
+  assert(pFinal(12, 'p0').myPickColor === MEDAL_METALS[0], 'the winner’s own card is not gold');
+  assert(pFinal(12, 'p2').myPickColor === MEDAL_METALS[2], 'third place’s own card is not bronze');
+  assert(pFinal(12, 'p3').myPickColor === 'var(--color-text)', 'fourth place got a medal; fourth is not a medal');
+  assert(pFinal(1, 'p0').myPickColor === 'var(--color-text)', 'the metal shows before the pick is revealed');
 });
 
 // ── the changed answer ──────────────────────────────────────────────────────
